@@ -5,7 +5,7 @@ def main(stdscr):
     # Clear screen
     unicurses.curs_set(0)
     unicurses.nodelay(stdscr, True)
-    stdscr.timeout(100)
+    unicurses.timeout(100)
 
     sh, sw = unicurses.getmaxyx(stdscr)
     w = stdscr
