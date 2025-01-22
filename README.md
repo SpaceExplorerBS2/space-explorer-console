@@ -6,8 +6,8 @@ A simple console game written in Python.
 
 1. Set up a virtual environment:
     ```sh
-    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-    venv\Scripts\Activate.ps1
+    python -m venv venv
+    source venv/bin/activate  # On Windows use `venv\Scripts\activate`
     ```
 
 2. Install dependencies:
