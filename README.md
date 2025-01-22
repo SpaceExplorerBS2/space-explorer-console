@@ -8,6 +8,11 @@ A simple console game written in Python.
     ```sh
     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
     venv\Scripts\Activate.ps1
+
+
+    Linux commands:
+    python3 -m venv venv
+    source venv/bin/activate
     ```
 
 2. Install dependencies:
