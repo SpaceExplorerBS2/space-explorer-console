@@ -21,4 +21,4 @@ A simple console game written in Python.
     ```
 
 4. Sample Data
-    - Ensure `planets.json` is in the project directory with the sample data.
+    - Ensure [planets.json](http://_vscodecontentref_/6) is in the project directory with the sample data.
