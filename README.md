@@ -26,7 +26,7 @@ A simple console game written in Python.
     ```
 
 5. Sample Data
-    - Ensure [planets.json](http://_vscodecontentref_/5) is in the project directory with the sample data.
+    - Ensure [planets.json](http://_vscodecontentref_/3) is in the project directory with the sample data.
 
 ## Controls for UniCursed Console Game
 
