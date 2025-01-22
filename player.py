@@ -1,6 +1,11 @@
 import Flask
 
 class Player:
-    def __init__(self, name: str):
-        self.name = name
-        self.resources = {"iron": 0, "gold": 0}
+    def __init__(player, name: str):
+        player.name = name
+        player.inventory = {"iron": 0, "gold": 0}
+        player.current_planet = None
+        player.ID = None
+        
+
+
