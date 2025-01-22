@@ -7,19 +7,20 @@ def draw_menu(stdscr):
     current_row = 0
 
     while True:
-        stdscr.clear()
+        unicurses.clear()
         for idx, row in enumerate(menu):
             x = sw // 2 - len(row) // 2
             y = sh // 2 - len(menu) // 2 + idx
+            unicurses.move(y, x)
             if idx == current_row:
-                stdscr.attron(unicurses.A_REVERSE)
-                stdscr.addstr(y, x, row)
-                stdscr.attroff(unicurses.A_REVERSE)
+                unicurses.attron(unicurses.A_REVERSE)
+                unicurses.addstr(row)
+                unicurses.attroff(unicurses.A_REVERSE)
             else:
-                stdscr.addstr(y, x, row)
-        stdscr.refresh()
+                unicurses.addstr(row)
+        unicurses.refresh()
 
-        key = stdscr.getch()
+        key = unicurses.getch()
 
         if key == unicurses.KEY_UP and current_row > 0:
             current_row -= 1
@@ -45,14 +46,15 @@ def main(stdscr):
             return
 
     unicurses.nodelay(stdscr, True)
-    stdscr.timeout(100)
+    unicurses.timeout(100)
 
     # Initial position of the player
     x, y = sw // 2, sh // 2
-    stdscr.addch(y, x, '@')
+    unicurses.move(y, x)
+    unicurses.addch('@')
 
     while True:
-        key = stdscr.getch()
+        key = unicurses.getch()
 
         if key == unicurses.KEY_UP:
             y = max(0, y - 1)
@@ -65,9 +67,10 @@ def main(stdscr):
         elif key == ord('q'):
             break
 
-        stdscr.clear()
-        stdscr.addch(y, x, '@')
-        stdscr.refresh()
+        unicurses.clear()
+        unicurses.move(y, x)
+        unicurses.addch('@')
+        unicurses.refresh()
 
 if __name__ == "__main__":
     unicurses.wrapper(main)
