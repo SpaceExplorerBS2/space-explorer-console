@@ -8,6 +8,8 @@ A simple console game written in Python.
     ```sh
     python -m venv venv
     source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+    venv\Scripts\Activate.ps1
     ```
 
 2. Install dependencies:
