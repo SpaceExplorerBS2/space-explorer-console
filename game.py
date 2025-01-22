@@ -1,37 +1,37 @@
 # FILE: game.py
-import curses
+import unicurses
 
 def main(stdscr):
     # Clear screen
-    curses.curs_set(0)
-    stdscr.nodelay(1)
+    unicurses.curs_set(0)
+    unicurses.nodelay(stdscr, True)
     stdscr.timeout(100)
 
-    sh, sw = stdscr.getmaxyx()
-    w = curses.newwin(sh, sw, 0, 0)
-    w.keypad(1)
+    sh, sw = unicurses.getmaxyx(stdscr)
+    w = stdscr
+    unicurses.keypad(w, True)
 
     # Initial position of the player
     x, y = sw // 2, sh // 2
-    w.addch(y, x, '@')
+    unicurses.mvwaddch(w, y, x, '@')
 
     while True:
-        key = w.getch()
+        key = unicurses.wgetch(w)
 
-        if key == curses.KEY_UP:
+        if key == unicurses.KEY_UP:
             y = max(0, y - 1)
-        elif key == curses.KEY_DOWN:
+        elif key == unicurses.KEY_DOWN:
             y = min(sh - 1, y + 1)
-        elif key == curses.KEY_LEFT:
+        elif key == unicurses.KEY_LEFT:
             x = max(0, x - 1)
-        elif key == curses.KEY_RIGHT:
+        elif key == unicurses.KEY_RIGHT:
             x = min(sw - 1, x + 1)
         elif key == ord('q'):
             break
 
-        w.clear()
-        w.addch(y, x, '@')
-        w.refresh()
+        unicurses.wclear(w)
+        unicurses.mvwaddch(w, y, x, '@')
+        unicurses.wrefresh(w)
 
 if __name__ == "__main__":
-    curses.wrapper(main)
+    unicurses.wrapper(main)
