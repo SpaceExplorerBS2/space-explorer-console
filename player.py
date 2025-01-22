@@ -1,11 +1,67 @@
-import Flask
+from typing import Dict, Optional, List
 
 class Player:
-    def __init__(player, name: str):
-        player.name = name
-        player.inventory = {"iron": 0, "gold": 0}
-        player.current_planet = None
-        player.ID = None
+    """
+    Represents a player in the space exploration game.
+    """
+    def __init__(self, name: str) -> None:
+        self.name = name
+        self.health = 100
+        self.inventory = {"iron": 0, "gold": 0}
+        self.position = {"x": 0, "y": 0}  # Position in the game world
+        self.current_planet = None
+        self.visited_planets = []  # Keep track of visited planets
+
+    def move_up(self) -> None:
+        """Move player up in the game world."""
+        self.position["y"] -= 1
+
+    def move_down(self) -> None:
+        """Move player down in the game world."""
+        self.position["y"] += 1
+
+    def move_left(self) -> None:
+        """Move player left in the game world."""
+        self.position["x"] -= 1
+
+    def move_right(self) -> None:
+        """Move player right in the game world."""
+        self.position["x"] += 1
+
+    def visit_planet(self, planet_name: str) -> None:
+        """
+        Visit a new planet.
         
+        Args:
+            planet_name: Name of the planet to visit
+        """
+        self.current_planet = planet_name
+        if planet_name not in self.visited_planets:
+            self.visited_planets.append(planet_name)
 
+    def collect_resource(self, resource: str, amount: int) -> None:
+        """
+        Collect a resource from current planet.
+        
+        Args:
+            resource: Resource type to collect
+            amount: Amount to collect
+        """
+        if resource in self.inventory:
+            self.inventory[resource] += amount
 
+    def get_status(self) -> Dict:
+        """
+        Get the current status of the player.
+        
+        Returns:
+            Dict containing player's current status
+        """
+        return {
+            "name": self.name,
+            "health": self.health,
+            "position": self.position,
+            "current_planet": self.current_planet,
+            "visited_planets": self.visited_planets,
+            "inventory": self.inventory
+        }
