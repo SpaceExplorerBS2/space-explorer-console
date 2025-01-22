@@ -1,2 +1,3 @@
 # FILE: requirements.txt
 Flask
+uni-curses
