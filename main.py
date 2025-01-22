@@ -1,8 +1,10 @@
 # FILE: main.py
 import json
 from flask import Flask, request, jsonify
+from routes import bp as routes_bp
 
 app = Flask(__name__)
+app.register_blueprint(routes_bp)
 
 def load_planets():
     with open('planets.json', 'r') as file:
