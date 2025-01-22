@@ -13,7 +13,6 @@ A simple console game written in Python.
 2. Install dependencies:
     ```sh
     pip install -r requirements.txt
-    pip install windows-curses  # Only for Windows users
     ```
 
 3. Run the Flask application:
@@ -21,15 +20,15 @@ A simple console game written in Python.
     python main.py
     ```
 
-4. Run the curses-based console game:
+4. Run the UniCursed console game:
     ```sh
     python game.py
     ```
 
 5. Sample Data
-    - Ensure [planets.json](http://_vscodecontentref_/0) is in the project directory with the sample data.
+    - Ensure [planets.json](http://_vscodecontentref_/5) is in the project directory with the sample data.
 
-## Controls for Curses-Based Console Game
+## Controls for UniCursed Console Game
 
 - Use the arrow keys to move the character (`@`).
 - Press `q` to quit the game.
