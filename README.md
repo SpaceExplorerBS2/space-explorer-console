@@ -6,8 +6,6 @@ A simple console game written in Python.
 
 1. Set up a virtual environment:
     ```sh
-    python -m venv venv
-    source venv/bin/activate  # On Windows use `venv\Scripts\activate`
     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
     venv\Scripts\Activate.ps1
     ```
@@ -21,3 +19,6 @@ A simple console game written in Python.
     ```sh
     python main.py
     ```
+
+4. Sample Data
+    - Ensure `planets.json` is in the project directory with the sample data.

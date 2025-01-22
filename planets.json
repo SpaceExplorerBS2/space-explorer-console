@@ -1,0 +1,119 @@
+[
+    {
+        "planetId": "planet123",
+        "name": "Zorax",
+        "resources": {
+            "iron": 50,
+            "gold": 20
+        },
+        "hazards": ["asteroid_field"]
+    },
+    {
+        "planetId": "planet456",
+        "name": "Xenon",
+        "resources": {
+            "copper": 30,
+            "silver": 10
+        },
+        "hazards": ["radiation"]
+    },
+    {
+        "planetId": "planet789",
+        "name": "Alderaan",
+        "resources": {
+            "water": 100,
+            "oxygen": 200
+        },
+        "hazards": ["none"]
+    },
+    {
+        "planetId": "planet101",
+        "name": "Tatooine",
+        "resources": {
+            "sand": 1000,
+            "spice": 50
+        },
+        "hazards": ["sandstorm"]
+    },
+    {
+        "planetId": "planet102",
+        "name": "Hoth",
+        "resources": {
+            "ice": 500,
+            "water": 300
+        },
+        "hazards": ["extreme_cold"]
+    },
+    {
+        "planetId": "planet103",
+        "name": "Dagobah",
+        "resources": {
+            "flora": 200,
+            "fauna": 150
+        },
+        "hazards": ["swamp"]
+    },
+    {
+        "planetId": "planet104",
+        "name": "Mustafar",
+        "resources": {
+            "lava": 1000,
+            "minerals": 500
+        },
+        "hazards": ["volcanic_activity"]
+    },
+    {
+        "planetId": "planet105",
+        "name": "Endor",
+        "resources": {
+            "wood": 300,
+            "wildlife": 200
+        },
+        "hazards": ["none"]
+    },
+    {
+        "planetId": "planet106",
+        "name": "Kashyyyk",
+        "resources": {
+            "wood": 500,
+            "wildlife": 300
+        },
+        "hazards": ["none"]
+    },
+    {
+        "planetId": "planet107",
+        "name": "Naboo",
+        "resources": {
+            "water": 400,
+            "flora": 300
+        },
+        "hazards": ["none"]
+    },
+    {
+        "planetId": "planet108",
+        "name": "Coruscant",
+        "resources": {
+            "technology": 1000,
+            "population": 1000000
+        },
+        "hazards": ["overpopulation"]
+    },
+    {
+        "planetId": "planet109",
+        "name": "Geonosis",
+        "resources": {
+            "minerals": 800,
+            "technology": 200
+        },
+        "hazards": ["dust_storms"]
+    },
+    {
+        "planetId": "planet110",
+        "name": "Kamino",
+        "resources": {
+            "water": 1000,
+            "technology": 500
+        },
+        "hazards": ["constant_rain"]
+    }
+]
