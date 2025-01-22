@@ -6,10 +6,10 @@ class Player:
     """
     def __init__(self, name: str) -> None:
         self.name = name
-        self.health = 100
-        self.inventory = {"iron": 0, "gold": 0}
+        self.health = 100 # player starts with 100 health
+        self.inventory = {} #by default empty inventory
         self.position = {"x": 0, "y": 0}  # Position in the game world
-        self.current_planet = None
+        self.current_planet = None # player starts in space
         self.visited_planets = []  # Keep track of visited planets
 
     def move_up(self) -> None:
@@ -65,3 +65,16 @@ class Player:
             "visited_planets": self.visited_planets,
             "inventory": self.inventory
         }
+
+    @staticmethod
+    def create_player(name: str) -> 'Player':
+        """
+        Factory method to create a new player.
+        
+        Args:
+            name: The name of the new player
+            
+        Returns:
+            A new Player instance
+        """
+        return Player(name)
