@@ -3,7 +3,7 @@ api abfragen
 • POST /player: Registriert einen neuen Spieler.     -- Peter
 • GET /planet: Gibt die Informationen ¨uber den aktuellen Planeten zurück. -- Elias 
 • POST /move: Der Spieler bewegt sich zu einem neuen Planeten.
-• POST /gather: Der Spieler sammelt Ressourcen auf einem Planeten
+• POST /gather: Der Spieler sammelt Ressourcen auf einem Planeten  -- Michael
 
 apidata darstellen
 -main menu   --Elias
