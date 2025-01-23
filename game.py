@@ -56,7 +56,7 @@ def create_player_menu(stdscr):
     
     while True:
         unicurses.clear()
-        name = get_string_input(stdscr, "Enter player name: ", sh//2, sw//4)
+        name = get_string_input(stdscr, "Spielernamen eingeben: ", sh//2, sw//4)
         
         if name:
             player_id = str(uuid.uuid4())[:8]
@@ -77,7 +77,7 @@ def create_player_menu(stdscr):
             
             unicurses.clear()
             unicurses.move(sh//2, sw//4)
-            unicurses.addstr(f"Player {name} created successfully!")
+            unicurses.addstr(f"Spieler {name} wurde erfolgreich angelegt!")
             unicurses.refresh()
             unicurses.napms(2000)
             return player_id, name
@@ -90,7 +90,7 @@ def select_player_menu(stdscr):
         sh, sw = unicurses.getmaxyx(stdscr)
         unicurses.clear()
         unicurses.move(sh//2, sw//4)
-        unicurses.addstr("No players found. Please create a player first.")
+        unicurses.addstr("Keine Spieler gefunden. Bitte lege erst einen Spieler an.")
         unicurses.refresh()
         unicurses.napms(2000)
         return None, None
@@ -101,7 +101,7 @@ def select_player_menu(stdscr):
         unicurses.clear()
         
         unicurses.move(sh//4, sw//4)
-        unicurses.addstr("Select Player:")
+        unicurses.addstr("Spieler wählen:")
         
         for idx, player in enumerate(players):
             unicurses.move(sh//4 + idx + 2, sw//4)
@@ -125,7 +125,7 @@ def select_player_menu(stdscr):
 
 def draw_menu(stdscr):
     sh, sw = unicurses.getmaxyx(stdscr)
-    menu = ["Start Game", "Create Player", "Select Player", "Exit"]
+    menu = ["Spiel Starten", "Spieler Anlegen", "Spieler Wählen", "Beenden"]
     current_row = 0
 
     while True:
@@ -200,6 +200,9 @@ def is_collision_with_planet(x, y, planets):
             return True
     return False
 
+def gameover():
+    unicurses.addstr("Game Over!")
+
 def main(stdscr):
     unicurses.curs_set(0)
     sh, sw = unicurses.getmaxyx(stdscr)
@@ -216,7 +219,7 @@ def main(stdscr):
             else:
                 unicurses.clear()
                 unicurses.move(sh//2, sw//4)
-                unicurses.addstr("Please select a player first!")
+                unicurses.addstr("Wähle erst einen Spieler!")
                 unicurses.refresh()
                 unicurses.napms(2000)
         elif choice == "create_player":
@@ -335,6 +338,7 @@ def main(stdscr):
         asteroids = [ast for ast in asteroids if not is_collision_with_planet(ast.x, ast.y, planets)]
 
         # Check for collision with player
+        # Check for collision with player
         for asteroid in asteroids:
             if asteroid.visible and asteroid.x == player.position["x"] and asteroid.y == player.position["y"]:
                 player.health -= 25
@@ -342,7 +346,7 @@ def main(stdscr):
                 if player.health <= 0:
                     unicurses.clear()
                     unicurses.move(sh // 2, sw // 2 - len("Game Over!") // 2)
-                    unicurses.addstr("Game Over!")
+                    gameover()
                     unicurses.refresh()
                     unicurses.napms(2000)
                     return
@@ -352,6 +356,8 @@ def main(stdscr):
 
         draw_world(buffer, player, planets, asteroids)
         unicurses.doupdate()
+        unicurses.move(0, 0)
+        unicurses.addstr(f"Leben: {player.health}")
 
 if __name__ == "__main__":
     unicurses.wrapper(main)
