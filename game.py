@@ -1,10 +1,11 @@
 # FILE: game.py
 import unicurses
 import random
-
+import time
 WORLD_WIDTH = 100
 WORLD_HEIGHT = 100
 NUM_PLANETS = 10
+
 
 def draw_menu(stdscr):
     sh, sw = unicurses.getmaxyx(stdscr)
@@ -49,28 +50,33 @@ def generate_planets():
 def generate_asteroids(num_asteroids, sw):
     return [(random.randint(0, sw - 1), 0) for _ in range(num_asteroids)]
 
-def draw_world(stdscr, player_x, player_y, planets, asteroids):
-    sh, sw = unicurses.getmaxyx(stdscr)
+def draw_world(buffer, player_x, player_y, planets, asteroids):
+    sh, sw = unicurses.getmaxyx(buffer)
     top = max(0, player_y - sh // 2)
     left = max(0, player_x - sw // 2)
 
-    unicurses.clear()
+    # Clear the buffer
+    unicurses.werase(buffer)
+
+    # Draw planets
     for planet_x, planet_y, size in planets:
         if top <= planet_y < top + sh and left <= planet_x < left + sw:
             for i in range(size):
                 for j in range(size):
                     if top <= planet_y + i < top + sh and left <= planet_x + j < left + sw:
-                        unicurses.move(planet_y + i - top, planet_x + j - left)
-                        unicurses.addch('O')
+                        unicurses.mvwaddch(buffer, planet_y + i - top, planet_x + j - left, 'O')
 
+    # Draw asteroids
     for ax, ay in asteroids:
         if top <= ay < top + sh and left <= ax < left + sw:
-            unicurses.move(ay - top, ax - left)
-            unicurses.addch('X')
+            unicurses.mvwaddch(buffer, ay - top, ax - left, 'X')
 
-    unicurses.move(player_y - top, player_x - left)
-    unicurses.addch('@')
-    unicurses.refresh()
+    # Draw player
+    unicurses.mvwaddch(buffer, player_y - top, player_x - left, '@')
+
+    # Refresh the buffer
+    unicurses.wnoutrefresh(buffer)
+    unicurses.doupdate()
 
 def is_collision_with_planet(player_x, player_y, planets):
     for planet_x, planet_y, size in planets:
@@ -91,11 +97,20 @@ def main(stdscr):
         elif choice == "exit":
             return
 
+    # Set up non-blocking input with zero delay
     unicurses.nodelay(stdscr, True)
-    unicurses.timeout(100)
+
+    # Create buffer window for double buffering
+    buffer = unicurses.newwin(sh, sw, 0, 0)
+    unicurses.keypad(buffer, True)
 
     # Initial position of the player
     player_x, player_y = WORLD_WIDTH // 2, WORLD_HEIGHT // 2
+
+    # Game settings
+    ASTEROID_SPEED = 15.0  # positions per second
+    last_move_time = time.time()
+    accumulated_movement = 0.0
 
     # Generate random planets
     planets = generate_planets()
@@ -122,13 +137,23 @@ def main(stdscr):
         if not is_collision_with_planet(new_x, new_y, planets):
             player_x, player_y = new_x, new_y
 
-        # Move asteroids down
+        # Calculate time-based movement
+        current_time = time.time()
+        elapsed = current_time - last_move_time
+        last_move_time = current_time
+        
+        accumulated_movement += elapsed * ASTEROID_SPEED
+        moves = int(accumulated_movement)
+        accumulated_movement -= moves
+
+        # Move asteroids down based on accumulated movement
         new_asteroids = []
         for ax, ay in asteroids:
-            if ay < WORLD_HEIGHT - 1:
-                new_asteroids.append((ax, ay + 1))
+            new_y = ay + moves
+            if new_y < WORLD_HEIGHT - 1:
+                new_asteroids.append((ax, new_y))
             else:
-                new_asteroids.append((random.randint(0, sw - 1), 0))
+                new_asteroids.append((random.randint(0, WORLD_WIDTH - 1), 0))
         asteroids = new_asteroids
 
         # Check for collision with planets
@@ -143,7 +168,7 @@ def main(stdscr):
             unicurses.napms(2000)
             break
 
-        draw_world(stdscr, player_x, player_y, planets, asteroids)
+        draw_world(buffer, player_x, player_y, planets, asteroids)
 
 if __name__ == "__main__":
     unicurses.wrapper(main)
