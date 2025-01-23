@@ -4,6 +4,9 @@ import random
 import time
 import json
 import uuid
+from player import Player
+from asteroid import Asteroid
+
 WORLD_WIDTH = 100
 WORLD_HEIGHT = 100
 NUM_PLANETS = 10
@@ -77,9 +80,9 @@ def create_player_menu(stdscr):
             unicurses.addstr(f"Player {name} created successfully!")
             unicurses.refresh()
             unicurses.napms(2000)
-            return player_id
+            return player_id, name
         else:
-            return None
+            return None, None
 
 def select_player_menu(stdscr):
     players = load_players()
@@ -90,7 +93,7 @@ def select_player_menu(stdscr):
         unicurses.addstr("No players found. Please create a player first.")
         unicurses.refresh()
         unicurses.napms(2000)
-        return None
+        return None, None
 
     current_row = 0
     while True:
@@ -116,9 +119,9 @@ def select_player_menu(stdscr):
         elif key == unicurses.KEY_DOWN and current_row < len(players) - 1:
             current_row += 1
         elif key in [unicurses.KEY_ENTER, 10, 13]:
-            return players[current_row]["playerId"]
+            return players[current_row]["playerId"], players[current_row]["name"]
         elif key == 27:  # Escape
-            return None
+            return None, None
 
 def draw_menu(stdscr):
     sh, sw = unicurses.getmaxyx(stdscr)
@@ -157,12 +160,12 @@ def generate_planets():
     return planets
 
 def generate_asteroids(num_asteroids, sw):
-    return [(random.randint(0, sw - 1), 0) for _ in range(num_asteroids)]
+    return [Asteroid(random.randint(0, sw - 1), 0) for _ in range(num_asteroids)]
 
-def draw_world(buffer, player_x, player_y, planets, asteroids):
+def draw_world(buffer, player, planets, asteroids):
     sh, sw = unicurses.getmaxyx(buffer)
-    top = max(0, player_y - sh // 2)
-    left = max(0, player_x - sw // 2)
+    top = max(0, player.position["y"] - sh // 2)
+    left = max(0, player.position["x"] - sw // 2)
 
     # Clear the buffer
     unicurses.werase(buffer)
@@ -173,23 +176,24 @@ def draw_world(buffer, player_x, player_y, planets, asteroids):
             for i in range(size):
                 for j in range(size):
                     if top <= planet_y + i < top + sh and left <= planet_x + j < left + sw:
-                        unicurses.mvwaddch(buffer, planet_y + i - top, planet_x + j - left, 'O')
+                        unicurses.mvwaddch(buffer, planet_y + i - top, planet_x + j - left, ord('O'))
 
     # Draw asteroids
-    for ax, ay in asteroids:
-        if top <= ay < top + sh and left <= ax < left + sw:
-            unicurses.mvwaddch(buffer, ay - top, ax - left, 'X')
+    for asteroid in asteroids:
+        if asteroid.visible and top <= asteroid.y < top + sh and left <= asteroid.x < left + sw:
+            unicurses.mvwaddch(buffer, asteroid.y - top, asteroid.x - left, ord('X'))
 
     # Draw player
-    unicurses.mvwaddch(buffer, player_y - top, player_x - left, '@')
+    unicurses.mvwaddch(buffer, player.position["y"] - top, player.position["x"] - left, ord('@'))
 
     # Refresh the buffer
     unicurses.wnoutrefresh(buffer)
     unicurses.doupdate()
 
-def is_collision_with_planet(player_x, player_y, planets):
+def is_collision_with_planet(x, y, planets):
     for planet_x, planet_y, size in planets:
-        if planet_x <= player_x < planet_x + size and planet_y <= player_y < planet_y + size:
+        if (planet_x <= x < planet_x + size and 
+            planet_y <= y < planet_y + size):
             return True
     return False
 
@@ -199,6 +203,7 @@ def main(stdscr):
     unicurses.keypad(stdscr, True)
 
     current_player_id = None
+    current_player_name = None
 
     while True:
         choice = draw_menu(stdscr)
@@ -212,11 +217,12 @@ def main(stdscr):
                 unicurses.refresh()
                 unicurses.napms(2000)
         elif choice == "create_player":
-            current_player_id = create_player_menu(stdscr)
+            current_player_id, current_player_name = create_player_menu(stdscr)
         elif choice == "select_player":
-            selected_id = select_player_menu(stdscr)
+            selected_id, selected_name = select_player_menu(stdscr)
             if selected_id:
                 current_player_id = selected_id
+                current_player_name = selected_name
         elif choice == "exit":
             return
 
@@ -227,11 +233,10 @@ def main(stdscr):
     buffer = unicurses.newwin(sh, sw, 0, 0)
     unicurses.keypad(buffer, True)
 
-    # Initial position of the player
-    player_x, player_y = WORLD_WIDTH // 2, WORLD_HEIGHT // 2
-
-    # Player's life
-    player_life = 100
+    # Create player instance
+    player = Player(current_player_name)
+    player.position["x"] = WORLD_WIDTH // 2
+    player.position["y"] = WORLD_HEIGHT // 2
 
     # Game settings
     ASTEROID_SPEED = 15.0  # positions per second
@@ -249,63 +254,77 @@ def main(stdscr):
     while True:
         key = unicurses.getch()
 
-        new_x, new_y = player_x, player_y
+        # Store old position for collision check
+        old_x = player.position["x"]
+        old_y = player.position["y"]
+
+        # Handle player movement
         if key == unicurses.KEY_UP:
-            new_y = max(0, player_y - 1)
+            player.move_up()
+            player.position["y"] = max(0, player.position["y"])
         elif key == unicurses.KEY_DOWN:
-            new_y = min(WORLD_HEIGHT - 1, player_y + 1)
+            player.move_down()
+            player.position["y"] = min(WORLD_HEIGHT - 1, player.position["y"])
         elif key == unicurses.KEY_LEFT:
-            new_x = max(0, player_x - 1)
+            player.move_left()
+            player.position["x"] = max(0, player.position["x"])
         elif key == unicurses.KEY_RIGHT:
-            new_x = min(WORLD_WIDTH - 1, player_x + 1)
+            player.move_right()
+            player.position["x"] = min(WORLD_WIDTH - 1, player.position["x"])
         elif key == ord('q'):
             break
 
-        # Check for collision with planets
-        if not is_collision_with_planet(new_x, new_y, planets):
-            player_x, player_y = new_x, new_y
+        # Check for collision with planets and revert if needed
+        if is_collision_with_planet(player.position["x"], player.position["y"], planets):
+            player.position["x"] = old_x
+            player.position["y"] = old_y
 
         # Calculate time-based movement
         current_time = time.time()
         elapsed = current_time - last_move_time
         last_move_time = current_time
-        
+
         accumulated_movement += elapsed * ASTEROID_SPEED
         moves = int(accumulated_movement)
         accumulated_movement -= moves
 
         # Move asteroids down based on accumulated movement
         new_asteroids = []
-        for ax, ay in asteroids:
-            new_y = ay + moves
-            if new_y < WORLD_HEIGHT - 1:
-                new_asteroids.append((ax, new_y))
+        for asteroid in asteroids:
+            asteroid.move_down(moves)
+            if asteroid.y < WORLD_HEIGHT - 1:
+                new_asteroids.append(asteroid)
             else:
-                new_asteroids.append((random.randint(0, WORLD_WIDTH - 1), 0))
+                new_asteroids.append(Asteroid(random.randint(0, WORLD_WIDTH - 1), 0))
         asteroids = new_asteroids
 
         # Generate new asteroids based on frequency
         if current_time - last_asteroid_time >= ASTEROID_FREQUENCY:
             last_asteroid_time = current_time
-            asteroids.append((random.randint(0, WORLD_WIDTH - 1), 0))
+            asteroids.append(Asteroid(random.randint(0, WORLD_WIDTH - 1), 0))
 
-        # Check for collision with planets
-        asteroids = [(ax, ay) for ax, ay in asteroids if not is_collision_with_planet(ax, ay, planets)]
+        # Remove asteroids that collide with planets
+        asteroids = [ast for ast in asteroids if not is_collision_with_planet(ast.x, ast.y, planets)]
 
         # Check for collision with player
-        if (player_x, player_y) in asteroids:
-            player_life -= 25
-            if player_life <= 0:
-                unicurses.clear()
-                unicurses.move(sh // 2, sw // 2 - len("Game Over!") // 2)
-                unicurses.addstr("Game Over!")
-                unicurses.refresh()
-                unicurses.napms(2000)
-                break
+        for asteroid in asteroids:
+            if asteroid.visible and asteroid.x == player.position["x"] and asteroid.y == player.position["y"]:
+                player.health -= 25
+                asteroid.visible = False
+                if player.health <= 0:
+                    unicurses.clear()
+                    unicurses.move(sh // 2, sw // 2 - len("Game Over!") // 2)
+                    unicurses.addstr("Game Over!")
+                    unicurses.refresh()
+                    unicurses.napms(2000)
+                    return
 
-        draw_world(buffer, player_x, player_y, planets, asteroids)
+        # Remove invisible asteroids
+        asteroids = [ast for ast in asteroids if ast.visible]
+
+        draw_world(buffer, player, planets, asteroids)
         unicurses.move(0, 0)
-        unicurses.addstr(f"Life: {player_life}")
+        unicurses.addstr(f"Life: {player.health}")
 
 if __name__ == "__main__":
     unicurses.wrapper(main)
