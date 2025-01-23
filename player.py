@@ -6,27 +6,32 @@ class Player:
     """
     def __init__(self, name: str) -> None:
         self.name = name
-        self.health = 100 # player starts with 100 health
-        self.inventory = {} #by default empty inventory
+        self.health = 100  # player starts with 100 health
+        self.fuel = 100    # player starts with 100 fuel
+        self.inventory = {}  # by default empty inventory
         self.position = {"x": 0, "y": 0}  # Position in the game world
-        self.current_planet = None # player starts in space
+        self.current_planet = None  # player starts in space
         self.visited_planets = []  # Keep track of visited planets
 
     def move_up(self) -> None:
         """Move player up in the game world."""
-        self.position["y"] -= 1
+        if self.use_fuel():
+            self.position["y"] -= 1
 
     def move_down(self) -> None:
         """Move player down in the game world."""
-        self.position["y"] += 1
+        if self.use_fuel():
+            self.position["y"] += 1
 
     def move_left(self) -> None:
         """Move player left in the game world."""
-        self.position["x"] -= 1
+        if self.use_fuel():
+            self.position["x"] -= 1
 
     def move_right(self) -> None:
         """Move player right in the game world."""
-        self.position["x"] += 1
+        if self.use_fuel():
+            self.position["x"] += 1
 
     def visit_planet(self, planet_name: str) -> None:
         """
@@ -50,21 +55,31 @@ class Player:
         if resource in self.inventory:
             self.inventory[resource] += amount
         else:
-            self.inventory.append[resource] = amount 
+            self.inventory[resource] = amount
+
+    def use_fuel(self, amount: int = 1) -> bool:
+        """
+        Use fuel for movement.
         
-        print(f"Du hast {amount} Einheiten {resource} gesammelt.")
+        Args:
+            amount: Amount of fuel to use
+            
+        Returns:
+            bool: True if enough fuel was available, False otherwise
         """
-        Resources have been collected.
-        """
-        print("In deinem Inventar befindet sich gerade:")
-        for x in self.inventory:
-            print(self.inventory[x])
+        if self.fuel >= amount:
+            self.fuel -= amount
+            return True
+        return False
 
-        print("\n Alle Ressourcen von diesem Planeten wurden bereits gesammelt.")
-
+    def add_fuel(self, amount: int) -> None:
         """
-        This planet has no more resources left to gather
+        Add fuel to the player.
+        
+        Args:
+            amount: Amount of fuel to add
         """
+        self.fuel = min(100, self.fuel + amount)  # Cap at 100
 
     def get_status(self) -> Dict:
         """
@@ -79,18 +94,26 @@ class Player:
             "position": self.position,
             "current_planet": self.current_planet,
             "visited_planets": self.visited_planets,
-            "inventory": self.inventory
+            "inventory": self.inventory,
+            "fuel": self.fuel
         }
 
-    @staticmethod
-    def create_player(name: str) -> 'Player':
+    @classmethod
+    def from_dict(cls, player_data: dict) -> 'Player':
         """
-        Factory method to create a new player.
+        Create a Player instance from a dictionary.
         
         Args:
-            name: The name of the new player
+            player_data: Dictionary containing player data
             
         Returns:
-            A new Player instance
+            A Player instance
         """
-        return Player(name)
+        player = Player(player_data["name"])
+        player.health = player_data.get("health", 100)
+        player.fuel = player_data.get("fuel", 100)
+        player.position = player_data.get("position", {"x": 0, "y": 0})
+        player.current_planet = player_data.get("currentPlanetId", None)
+        player.visited_planets = player_data.get("visited_planets", [])
+        player.inventory = player_data.get("inventory", {})
+        return player

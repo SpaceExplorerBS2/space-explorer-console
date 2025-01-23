@@ -165,10 +165,14 @@ def generate_asteroids(num_asteroids, sw):
 def draw_world(buffer, player, planets, asteroids):
     sh, sw = unicurses.getmaxyx(buffer)
     top = max(0, player.position["y"] - sh // 2)
+
     left = max(0, player.position["x"] - sw // 2)
 
     # Clear the buffer
     unicurses.werase(buffer)
+
+    status_str = f"Life: {player.health} \n Fuel: {player.fuel}"
+    unicurses.mvwaddstr(buffer, 0, 0, status_str)
 
     # Draw planets
     for planet_x, planet_y, size in planets:
@@ -196,6 +200,132 @@ def is_collision_with_planet(x, y, planets):
             planet_y <= y < planet_y + size):
             return True
     return False
+
+def game_loop(buffer, player, planets, sw):
+    # Game settings
+    ASTEROID_SPEED = 15.0  # positions per second
+    ASTEROID_FREQUENCY = 0.5  # new asteroids per second
+    FUEL_REGEN_TIME = 15.0  # seconds to wait before regenerating fuel
+    FUEL_REGEN_AMOUNT = 15  # amount of fuel to regenerate
+    REFRESH_RATE = 0.05  # seconds between screen refreshes
+    
+    last_move_time = time.time()
+    last_asteroid_time = time.time()
+    last_movement_time = time.time()  # Track when player last moved
+    last_refresh_time = time.time()   # Track when screen was last refreshed
+    accumulated_movement = 0.0
+
+    # Set input to non-blocking
+    unicurses.nodelay(buffer, True)
+
+    # Generate random planets
+    asteroids = []
+    asteroids = generate_asteroids(5, sw)
+
+    while True:
+        current_time = time.time()
+        
+        # Get user input (non-blocking)
+        key = unicurses.wgetch(buffer)
+        
+        # Store old position for collision check
+        old_x = player.position["x"]
+        old_y = player.position["y"]
+        moved = False
+
+        # Handle player movement if there was input
+        if key != -1:  # -1 means no key was pressed
+            if key == unicurses.KEY_UP:
+                if player.fuel > 0:
+                    player.move_up()
+                    player.position["y"] = max(0, player.position["y"])
+                    moved = True
+            elif key == unicurses.KEY_DOWN:
+                if player.fuel > 0:
+                    player.move_down()
+                    player.position["y"] = min(WORLD_HEIGHT - 1, player.position["y"])
+                    moved = True
+            elif key == unicurses.KEY_LEFT:
+                if player.fuel > 0:
+                    player.move_left()
+                    player.position["x"] = max(0, player.position["x"])
+                    moved = True
+            elif key == unicurses.KEY_RIGHT:
+                if player.fuel > 0:
+                    player.move_right()
+                    player.position["x"] = min(WORLD_WIDTH - 1, player.position["x"])
+                    moved = True
+            elif key == ord('q'):
+                break
+
+            # Check for collision with planets and revert if needed
+            if is_collision_with_planet(player.position["x"], player.position["y"], planets):
+                player.position["x"] = old_x
+                player.position["y"] = old_y
+                moved = False
+
+        # Update last movement time if player moved
+        if moved:
+            last_movement_time = current_time
+        else:
+            # Check if player has been still long enough to regenerate fuel
+            if current_time - last_movement_time >= FUEL_REGEN_TIME and player.fuel < 100:
+                player.add_fuel(FUEL_REGEN_AMOUNT)
+                last_movement_time = current_time  # Reset timer after regenerating
+
+        # Game over if out of fuel
+        if player.fuel <= 0:
+            unicurses.clear()
+            unicurses.move(sh // 2, sw // 2 - len("Out of Fuel! Game Over!") // 2)
+            unicurses.addstr("Out of Fuel! Game Over!")
+            unicurses.refresh()
+            unicurses.napms(2000)
+            return
+
+        # Calculate time-based movement for asteroids
+        elapsed = current_time - last_move_time
+        accumulated_movement += ASTEROID_SPEED * elapsed
+        
+        while accumulated_movement >= 1.0:
+            # Move all asteroids down
+            for asteroid in asteroids:
+                asteroid.y += 1
+                if asteroid.y >= WORLD_HEIGHT:
+                    asteroid.visible = False
+            accumulated_movement -= 1.0
+
+        last_move_time = current_time
+
+        # Generate new asteroids
+        if current_time - last_asteroid_time > 1.0 / ASTEROID_FREQUENCY:
+            new_asteroid_x = random.randint(0, WORLD_WIDTH - 1)
+            asteroids.append(Asteroid(new_asteroid_x, 0))
+            last_asteroid_time = current_time
+
+        # Check for collisions with asteroids
+        for asteroid in asteroids:
+            if asteroid.visible and asteroid.x == player.position["x"] and asteroid.y == player.position["y"]:
+                player.health -= 10
+                asteroid.visible = False
+
+                if player.health <= 0:
+                    unicurses.clear()
+                    unicurses.move(sh // 2, sw // 2 - len("Game Over!") // 2)
+                    unicurses.addstr("Game Over!")
+                    unicurses.refresh()
+                    unicurses.napms(2000)
+                    return
+
+        # Remove invisible asteroids
+        asteroids = [ast for ast in asteroids if ast.visible]
+
+        # Update screen at regular intervals
+        if current_time - last_refresh_time >= REFRESH_RATE:
+            draw_world(buffer, player, planets, asteroids)
+            last_refresh_time = current_time
+
+        # Small sleep to prevent CPU overuse
+        time.sleep(0.01)
 
 def main(stdscr):
     unicurses.curs_set(0)
@@ -238,91 +368,10 @@ def main(stdscr):
     player.position["x"] = WORLD_WIDTH // 2
     player.position["y"] = WORLD_HEIGHT // 2
 
-    # Game settings
-    ASTEROID_SPEED = 15.0  # positions per second
-    ASTEROID_FREQUENCY = 0.5  # new asteroids per second
-    last_move_time = time.time()
-    last_asteroid_time = time.time()
-    accumulated_movement = 0.0
-
     # Generate random planets
     planets = generate_planets()
 
-    # Generate random asteroids
-    asteroids = generate_asteroids(5, sw)
-
-    while True:
-        key = unicurses.getch()
-
-        # Store old position for collision check
-        old_x = player.position["x"]
-        old_y = player.position["y"]
-
-        # Handle player movement
-        if key == unicurses.KEY_UP:
-            player.move_up()
-            player.position["y"] = max(0, player.position["y"])
-        elif key == unicurses.KEY_DOWN:
-            player.move_down()
-            player.position["y"] = min(WORLD_HEIGHT - 1, player.position["y"])
-        elif key == unicurses.KEY_LEFT:
-            player.move_left()
-            player.position["x"] = max(0, player.position["x"])
-        elif key == unicurses.KEY_RIGHT:
-            player.move_right()
-            player.position["x"] = min(WORLD_WIDTH - 1, player.position["x"])
-        elif key == ord('q'):
-            break
-
-        # Check for collision with planets and revert if needed
-        if is_collision_with_planet(player.position["x"], player.position["y"], planets):
-            player.position["x"] = old_x
-            player.position["y"] = old_y
-
-        # Calculate time-based movement
-        current_time = time.time()
-        elapsed = current_time - last_move_time
-        last_move_time = current_time
-
-        accumulated_movement += elapsed * ASTEROID_SPEED
-        moves = int(accumulated_movement)
-        accumulated_movement -= moves
-
-        # Move asteroids down based on accumulated movement
-        new_asteroids = []
-        for asteroid in asteroids:
-            asteroid.move_down(moves)
-            if asteroid.y < WORLD_HEIGHT - 1:
-                new_asteroids.append(asteroid)
-            else:
-                new_asteroids.append(Asteroid(random.randint(0, WORLD_WIDTH - 1), 0))
-        asteroids = new_asteroids
-
-        # Generate new asteroids based on frequency
-        if current_time - last_asteroid_time >= ASTEROID_FREQUENCY:
-            last_asteroid_time = current_time
-            asteroids.append(Asteroid(random.randint(0, WORLD_WIDTH - 1), 0))
-
-        # Remove asteroids that collide with planets
-        asteroids = [ast for ast in asteroids if not is_collision_with_planet(ast.x, ast.y, planets)]
-
-        # Check for collision with player
-        for asteroid in asteroids:
-            if asteroid.visible and asteroid.x == player.position["x"] and asteroid.y == player.position["y"]:
-                player.health -= 25
-                asteroid.visible = False
-                if player.health <= 0:
-                    unicurses.clear()
-                    unicurses.move(sh // 2, sw // 2 - len("Game Over!") // 2)
-                    unicurses.addstr("Game Over!")
-                    unicurses.refresh()
-                    unicurses.napms(2000)
-                    return
-
-        # Remove invisible asteroids
-        asteroids = [ast for ast in asteroids if ast.visible]
-
-        draw_world(buffer, player, planets, asteroids)
+    game_loop(buffer, player, planets, sw)
 
 if __name__ == "__main__":
     unicurses.wrapper(main)
