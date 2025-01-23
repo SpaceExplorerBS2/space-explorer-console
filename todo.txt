@@ -7,3 +7,16 @@ api abfragen
 
 apidata darstellen
 -main menu   --Elias
+
+- player design -- Peter
+- planet design -- Peter
+- on move follow viewframe -- Peter
+- asteroids -- Peter
+- game over screen
+- asteroid destruction
+- main menu settings
+- api documentation
+- add sfx to game -- Peter
+- add music to game -- Peter
+- add animations for player -- Peter
+- add animations for planet idle/mining  -- Peter   
