@@ -51,15 +51,16 @@ class Player:
             self.inventory[resource] += amount
         else:
             self.inventory.append[resource] = amount 
-
         
-        f"""
-        You have collected {amount} units of {resource}.
-        
-        Your inventory currently contains:
+        print(f"You have collected {amount} units of {resource}.")
         """
+        Resources have been collected.
+        """
+        print("Your inventory currently contains:")
         for x in self.inventory:
             print(self.inventory[x])
+
+        print("\n All resources on this planet have been harvested.")
 
         """
         This planet has no more resources left to gather

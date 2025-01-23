@@ -13,7 +13,7 @@ apidata darstellen
 - on move follow viewframe -- Peter
 - asteroids design -- Peter
 - asteroids behavior -- Elias
-- game over screen
+- game over screen -- Michael
 - asteroid destruction
 - main menu settings
 - api documentation

@@ -78,6 +78,9 @@ def is_collision_with_planet(player_x, player_y, planets):
             return True
     return False
 
+def gameover():
+    unicurses.addstr("Game Over!")
+
 def main(stdscr):
     # Clear screen
     unicurses.curs_set(0)
@@ -138,7 +141,7 @@ def main(stdscr):
         if (player_x, player_y) in asteroids:
             unicurses.clear()
             unicurses.move(sh // 2, sw // 2 - len("Game Over!") // 2)
-            unicurses.addstr("Game Over!")
+            gameover()
             unicurses.refresh()
             unicurses.napms(2000)
             break
