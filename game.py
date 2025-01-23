@@ -240,7 +240,7 @@ def main(stdscr):
 
     # Game settings
     ASTEROID_SPEED = 15.0  # positions per second
-    ASTEROID_FREQUENCY = 0.1  # new asteroids per second
+    ASTEROID_FREQUENCY = 0.5  # new asteroids per second
     last_move_time = time.time()
     last_asteroid_time = time.time()
     accumulated_movement = 0.0
