@@ -165,14 +165,36 @@ def generate_asteroids(num_asteroids, sw):
 def draw_world(buffer, player, planets, asteroids):
     sh, sw = unicurses.getmaxyx(buffer)
     top = max(0, player.position["y"] - sh // 2)
-
     left = max(0, player.position["x"] - sw // 2)
 
-    # Clear the buffer
+    # Clear the buffer and reset attributes
     unicurses.werase(buffer)
+    unicurses.wattrset(buffer, unicurses.color_pair(3))  # Reset to default white
 
-    status_str = f"Life: {player.health} \n Fuel: {player.fuel}"
-    unicurses.mvwaddstr(buffer, 0, 0, status_str)
+    # Set color based on health percentage
+    health_color = unicurses.color_pair(3)  # default white
+    if player.health < 30:
+        health_color = unicurses.color_pair(1)  # red
+    elif player.health < 50:
+        health_color = unicurses.color_pair(2)  # yellow
+        
+    # Set color based on fuel percentage
+    fuel_color = unicurses.color_pair(3)  # default white
+    if player.fuel < 30:
+        fuel_color = unicurses.color_pair(1)  # red
+    elif player.fuel < 50:
+        fuel_color = unicurses.color_pair(2)  # yellow
+
+    # Draw health with color
+    unicurses.wattrset(buffer, health_color)
+    unicurses.mvwaddstr(buffer, 0, 0, f"Life: {player.health}")
+    
+    # Draw fuel with color
+    unicurses.wattrset(buffer, fuel_color)
+    unicurses.mvwaddstr(buffer, 1, 0, f"Fuel: {player.fuel}")
+
+    # Reset color to default for remaining drawing
+    unicurses.wattrset(buffer, unicurses.color_pair(3))
 
     # Draw planets
     for planet_x, planet_y, size in planets:
@@ -329,6 +351,10 @@ def game_loop(buffer, player, planets, sh, sw):
 
 def main(stdscr):
     unicurses.curs_set(0)
+    unicurses.start_color()
+    unicurses.init_pair(1, unicurses.COLOR_RED, unicurses.COLOR_BLACK)    # For critical levels (<30%)
+    unicurses.init_pair(2, unicurses.COLOR_YELLOW, unicurses.COLOR_BLACK) # For warning levels (<50%)
+    unicurses.init_pair(3, unicurses.COLOR_WHITE, unicurses.COLOR_BLACK)  # For normal levels
     sh, sw = unicurses.getmaxyx(stdscr)
     unicurses.keypad(stdscr, True)
 
