@@ -1,0 +1,32 @@
+[
+    {
+        "playerId": "12345",
+        "name": "CaptainX",
+        "inventory": {
+            "fuel": 70,
+            "iron": 0,
+            "gold": 0
+        },
+        "currentPlanetId": "planet789"
+    },
+    {
+        "playerId": "12346",
+        "name": "CaptainY",
+        "inventory": {
+            "fuel": 100,
+            "iron": 0,
+            "gold": 0
+        },
+        "currentPlanetId": "planet101"
+    },
+    {
+        "playerId": "12347",
+        "name": "CaptainZ",
+        "inventory": {
+            "fuel": 110,
+            "iron": 0,
+            "gold": 0
+        },
+        "currentPlanetId": "planet123"
+    }
+]

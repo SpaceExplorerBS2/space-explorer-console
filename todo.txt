@@ -11,7 +11,8 @@ apidata darstellen
 - player design -- Peter
 - planet design -- Peter
 - on move follow viewframe -- Peter
-- asteroids -- Peter
+- asteroids design -- Peter
+- asteroids behavior -- Elias
 - game over screen
 - asteroid destruction
 - main menu settings
