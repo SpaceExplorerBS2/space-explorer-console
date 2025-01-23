@@ -2,6 +2,8 @@
 import json
 from flask import Flask, request, jsonify
 from routes import bp as routes_bp
+import sys
+sys.setdefaultencoding("UTF-16")
 
 app = Flask(__name__)
 app.register_blueprint(routes_bp)
@@ -84,7 +86,7 @@ def move_to_planet():
     return jsonify(response)
 
 def main():
-    print("Welcome to Space Explorer Console Game!")
+    print("Willkommen bei Space Explorer, dem Spiel in deiner Konsole!")
     app.run(debug=True)
 
 if __name__ == "__main__":
