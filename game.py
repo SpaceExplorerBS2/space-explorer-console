@@ -230,9 +230,14 @@ def main(stdscr):
     # Initial position of the player
     player_x, player_y = WORLD_WIDTH // 2, WORLD_HEIGHT // 2
 
+    # Player's life
+    player_life = 100
+
     # Game settings
     ASTEROID_SPEED = 15.0  # positions per second
+    ASTEROID_FREQUENCY = 0.1  # new asteroids per second
     last_move_time = time.time()
+    last_asteroid_time = time.time()
     accumulated_movement = 0.0
 
     # Generate random planets
@@ -279,19 +284,28 @@ def main(stdscr):
                 new_asteroids.append((random.randint(0, WORLD_WIDTH - 1), 0))
         asteroids = new_asteroids
 
+        # Generate new asteroids based on frequency
+        if current_time - last_asteroid_time >= ASTEROID_FREQUENCY:
+            last_asteroid_time = current_time
+            asteroids.append((random.randint(0, WORLD_WIDTH - 1), 0))
+
         # Check for collision with planets
         asteroids = [(ax, ay) for ax, ay in asteroids if not is_collision_with_planet(ax, ay, planets)]
 
         # Check for collision with player
         if (player_x, player_y) in asteroids:
-            unicurses.clear()
-            unicurses.move(sh // 2, sw // 2 - len("Game Over!") // 2)
-            unicurses.addstr("Game Over!")
-            unicurses.refresh()
-            unicurses.napms(2000)
-            break
+            player_life -= 25
+            if player_life <= 0:
+                unicurses.clear()
+                unicurses.move(sh // 2, sw // 2 - len("Game Over!") // 2)
+                unicurses.addstr("Game Over!")
+                unicurses.refresh()
+                unicurses.napms(2000)
+                break
 
         draw_world(buffer, player_x, player_y, planets, asteroids)
+        unicurses.move(0, 0)
+        unicurses.addstr(f"Life: {player_life}")
 
 if __name__ == "__main__":
     unicurses.wrapper(main)
