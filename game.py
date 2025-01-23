@@ -1,5 +1,6 @@
 # FILE: game.py
 import unicurses
+import random
 
 def draw_menu(stdscr):
     sh, sw = unicurses.getmaxyx(stdscr)
@@ -53,6 +54,9 @@ def main(stdscr):
     unicurses.move(y, x)
     unicurses.addch('@')
 
+    # Generate random asteroids
+    asteroids = [(random.randint(0, sw - 1), 0) for _ in range(5)]
+
     while True:
         key = unicurses.getch()
 
@@ -67,9 +71,32 @@ def main(stdscr):
         elif key == ord('q'):
             break
 
+        # Move asteroids down
+        new_asteroids = []
+        for ax, ay in asteroids:
+            if ay < sh - 1:
+                new_asteroids.append((ax, ay + 1))
+            else:
+                new_asteroids.append((random.randint(0, sw - 1), 0))
+        asteroids = new_asteroids
+
+        # Check for collision
+        if (x, y) in asteroids:
+            unicurses.clear()
+            unicurses.move(sh // 2, sw // 2 - len("Game Over!") // 2)
+            unicurses.addstr("Game Over!")
+            unicurses.refresh()
+            unicurses.napms(2000)
+            break
+
         unicurses.clear()
         unicurses.move(y, x)
         unicurses.addch('@')
+
+        for ax, ay in asteroids:
+            unicurses.move(ay, ax)
+            unicurses.addch('X')
+
         unicurses.refresh()
 
 if __name__ == "__main__":
