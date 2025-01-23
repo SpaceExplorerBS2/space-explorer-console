@@ -1,14 +1,97 @@
 # FILE: game.py
 import unicurses
 import random
+import json
+import uuid
 
 WORLD_WIDTH = 100
 WORLD_HEIGHT = 100
 NUM_PLANETS = 10
 
+def load_players():
+    try:
+        with open('players.json', 'r') as file:
+            return json.load(file)
+    except FileNotFoundError:
+        return []
+
+def save_players(players):
+    with open('players.json', 'w') as file:
+        json.dump(players, file, indent=4)
+
+def get_string_input(stdscr, prompt, y, x):
+    unicurses.echo()  # Show typed characters
+    unicurses.curs_set(1)  # Show cursor
+    
+    # Display prompt
+    unicurses.move(y, x)
+    unicurses.addstr(prompt)
+    
+    # Get input
+    input_str = ""
+    while True:
+        ch = unicurses.getch()
+        if ch in [10, 13]:  # Enter key
+            break
+        elif ch == 27:  # Escape key
+            input_str = None
+            break
+        elif ch == 8 or ch == 127:  # Backspace
+            if input_str:
+                input_str = input_str[:-1]
+                unicurses.move(y, x + len(prompt))
+                unicurses.addstr(" " * len(input_str) + " ")
+                unicurses.move(y, x + len(prompt))
+                unicurses.addstr(input_str)
+        else:
+            input_str += chr(ch)
+    
+    unicurses.noecho()
+    unicurses.curs_set(0)
+    return input_str
+
+def settings_menu(stdscr):
+    sh, sw = unicurses.getmaxyx(stdscr)
+    
+    while True:
+        unicurses.clear()
+        # Get player name
+        name = get_string_input(stdscr, "Enter player name: ", sh//2, sw//4)
+        
+        if name:
+            # Generate unique player ID
+            player_id = str(uuid.uuid4())[:8]
+            
+            # Create new player object
+            new_player = {
+                "playerId": player_id,
+                "name": name,
+                "inventory": {
+                    "fuel": 100,
+                    "iron": 0,
+                    "gold": 0
+                },
+                "currentPlanetId": None
+            }
+            
+            # Load existing players and add new player
+            players = load_players()
+            players.append(new_player)
+            save_players(players)
+            
+            # Show confirmation
+            unicurses.clear()
+            unicurses.move(sh//2, sw//4)
+            unicurses.addstr(f"Player {name} created successfully!")
+            unicurses.refresh()
+            unicurses.napms(2000)  # Show message for 2 seconds
+            return
+        else:
+            return  # Return if user pressed Escape
+
 def draw_menu(stdscr):
     sh, sw = unicurses.getmaxyx(stdscr)
-    menu = ["Start", "Exit"]
+    menu = ["Start", "Settings", "Exit"]
     current_row = 0
 
     while True:
@@ -35,6 +118,8 @@ def draw_menu(stdscr):
             if current_row == 0:
                 return "start"
             elif current_row == 1:
+                return "settings"
+            elif current_row == 2:
                 return "exit"
 
 def generate_planets():
@@ -88,6 +173,8 @@ def main(stdscr):
         choice = draw_menu(stdscr)
         if choice == "start":
             break
+        elif choice == "settings":
+            settings_menu(stdscr)
         elif choice == "exit":
             return
 
