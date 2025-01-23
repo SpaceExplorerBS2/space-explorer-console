@@ -4,12 +4,12 @@ class Player:
     """
     Represents a player in the space exploration game.
     """
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, fuel: int = 100) -> None:
         self.name = name
-        self.health = 100 # player starts with 100 health
-        self.inventory = {} #by default empty inventory
+        self.health = 100  # player starts with 100 health
+        self.inventory = {"fuel": fuel}  # Initialize inventory with fuel
         self.position = {"x": 0, "y": 0}  # Position in the game world
-        self.current_planet = None # player starts in space
+        self.current_planet = None  # player starts in space
         self.visited_planets = []  # Keep track of visited planets
 
     def move_up(self) -> None:
@@ -50,20 +50,7 @@ class Player:
         if resource in self.inventory:
             self.inventory[resource] += amount
         else:
-            self.inventory.append[resource] = amount 
-
-        
-        f"""
-        You have collected {amount} units of {resource}.
-        
-        Your inventory currently contains:
-        """
-        for x in self.inventory:
-            print(self.inventory[x])
-
-        """
-        This planet has no more resources left to gather
-        """
+            self.inventory[resource] = amount
 
     def get_status(self) -> Dict:
         """
@@ -93,3 +80,24 @@ class Player:
             A new Player instance
         """
         return Player(name)
+
+    @staticmethod
+    def load_player(player_data: Dict) -> 'Player':
+        """
+        Factory method to load a player from a dictionary.
+        
+        Args:
+            player_data: Dictionary containing player data
+            
+        Returns:
+            A Player instance
+        """
+        player = Player(player_data["name"], player_data["inventory"].get("fuel", 100))
+        player.health = player_data.get("health", 100)
+        player.position = player_data.get("position", {"x": 0, "y": 0})
+        player.current_planet = player_data.get("currentPlanetId", None)
+        player.visited_planets = player_data.get("visited_planets", [])
+        player.inventory.update(player_data.get("inventory", {}))
+        if "fuel" not in player.inventory:
+            player.inventory["fuel"] = 100
+        return player

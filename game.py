@@ -243,6 +243,7 @@ def main(stdscr):
     ASTEROID_FREQUENCY = 0.1  # new asteroids per second
     last_move_time = time.time()
     last_asteroid_time = time.time()
+    last_fuel_gain_time = time.time()
     accumulated_movement = 0.0
 
     # Generate random planets
@@ -278,6 +279,16 @@ def main(stdscr):
         if is_collision_with_planet(player.position["x"], player.position["y"], planets):
             player.position["x"] = old_x
             player.position["y"] = old_y
+        else:
+            # Deduct fuel for each move
+            player.inventory["fuel"] -= 1
+            if player.inventory["fuel"] <= 0:
+                unicurses.clear()
+                unicurses.move(sh // 2, sw // 2 - len("Out of Fuel! Game Over!") // 2)
+                unicurses.addstr("Out of Fuel! Game Over!")
+                unicurses.refresh()
+                unicurses.napms(2000)
+                return
 
         # Calculate time-based movement
         current_time = time.time()
@@ -322,9 +333,14 @@ def main(stdscr):
         # Remove invisible asteroids
         asteroids = [ast for ast in asteroids if ast.visible]
 
+        # Gain fuel every 10 seconds
+        if current_time - last_fuel_gain_time >= 10:
+            last_fuel_gain_time = current_time
+            player.inventory["fuel"] = min(100, player.inventory["fuel"] + 15)
+
         draw_world(buffer, player, planets, asteroids)
         unicurses.move(0, 0)
-        unicurses.addstr(f"Life: {player.health}")
+        unicurses.addstr(f"Life: {player.health} Fuel: {player.inventory['fuel']}")
 
 if __name__ == "__main__":
     unicurses.wrapper(main)
