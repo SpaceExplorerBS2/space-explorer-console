@@ -170,6 +170,10 @@ def draw_world(buffer, player, planets, asteroids):
     # Clear the buffer
     unicurses.werase(buffer)
 
+    # Draw UI elements first
+    status_str = f"Life: {player.health} Fuel: {player.fuel}"
+    unicurses.mvwaddstr(buffer, 0, 0, status_str)
+
     # Draw planets
     for planet_x, planet_y, size in planets:
         if top <= planet_y < top + sh and left <= planet_x < left + sw:
@@ -188,7 +192,6 @@ def draw_world(buffer, player, planets, asteroids):
 
     # Refresh the buffer
     unicurses.wnoutrefresh(buffer)
-    unicurses.doupdate()
 
 def is_collision_with_planet(x, y, planets):
     for planet_x, planet_y, size in planets:
@@ -246,6 +249,7 @@ def main(stdscr):
     ASTEROID_FREQUENCY = 0.1  # new asteroids per second
     last_move_time = time.time()
     last_asteroid_time = time.time()
+    last_fuel_gain_time = time.time()
     accumulated_movement = 0.0
 
     # Generate random planets
@@ -262,18 +266,27 @@ def main(stdscr):
         old_y = player.position["y"]
 
         # Handle player movement
+        moved = False
         if key == unicurses.KEY_UP:
-            player.move_up()
-            player.position["y"] = max(0, player.position["y"])
+            if player.fuel > 0:
+                player.move_up()
+                player.position["y"] = max(0, player.position["y"])
+                moved = True
         elif key == unicurses.KEY_DOWN:
-            player.move_down()
-            player.position["y"] = min(WORLD_HEIGHT - 1, player.position["y"])
+            if player.fuel > 0:
+                player.move_down()
+                player.position["y"] = min(WORLD_HEIGHT - 1, player.position["y"])
+                moved = True
         elif key == unicurses.KEY_LEFT:
-            player.move_left()
-            player.position["x"] = max(0, player.position["x"])
+            if player.fuel > 0:
+                player.move_left()
+                player.position["x"] = max(0, player.position["x"])
+                moved = True
         elif key == unicurses.KEY_RIGHT:
-            player.move_right()
-            player.position["x"] = min(WORLD_WIDTH - 1, player.position["x"])
+            if player.fuel > 0:
+                player.move_right()
+                player.position["x"] = min(WORLD_WIDTH - 1, player.position["x"])
+                moved = True
         elif key == ord('q'):
             break
 
@@ -281,6 +294,21 @@ def main(stdscr):
         if is_collision_with_planet(player.position["x"], player.position["y"], planets):
             player.position["x"] = old_x
             player.position["y"] = old_y
+            moved = False
+
+        # Game over if out of fuel
+        if player.fuel <= 0:
+            unicurses.clear()
+            unicurses.move(sh // 2, sw // 2 - len("Out of Fuel! Game Over!") // 2)
+            unicurses.addstr("Out of Fuel! Game Over!")
+            unicurses.refresh()
+            unicurses.napms(2000)
+            return
+
+        # Gain fuel every 10 seconds
+        if time.time() - last_fuel_gain_time >= 10:
+            last_fuel_gain_time = time.time()
+            player.add_fuel(15)  # Add 15 fuel, capped at 100
 
         # Calculate time-based movement
         current_time = time.time()
@@ -327,6 +355,7 @@ def main(stdscr):
         asteroids = [ast for ast in asteroids if ast.visible]
 
         draw_world(buffer, player, planets, asteroids)
+        unicurses.doupdate()
         unicurses.move(0, 0)
         unicurses.addstr(f"Leben: {player.health}")
 
