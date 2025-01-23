@@ -1,0 +1,28 @@
+- we write our code in OOP
+- we write our classes in separate files
+- our classesnames should be in singular
+
+example class:
+
+class Player:
+    player properties:
+        name
+        health
+        inventory
+        position
+        current_planet
+    
+    player methods:
+        move_up()
+        move_down()
+        move_left()
+        move_right()
+        visit_planet()
+        collect_resource()
+        get_status()
+
+the class contains player properties and methods.
+
+
+we also use git and don't use branches, but that is more a suggestion and not a rule.
+Please adhere to the rules to insure code quality, maintainability, and scalability.
