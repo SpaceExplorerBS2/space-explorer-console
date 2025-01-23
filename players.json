@@ -28,5 +28,35 @@
             "gold": 0
         },
         "currentPlanetId": "planet123"
+    },
+    {
+        "playerId": "a1f45410",
+        "name": "\u0102test",
+        "inventory": {
+            "fuel": 100,
+            "iron": 0,
+            "gold": 0
+        },
+        "currentPlanetId": null
+    },
+    {
+        "playerId": "3e4be6b3",
+        "name": "test1",
+        "inventory": {
+            "fuel": 100,
+            "iron": 0,
+            "gold": 0
+        },
+        "currentPlanetId": null
+    },
+    {
+        "playerId": "23c6a8e0",
+        "name": "tesstttt",
+        "inventory": {
+            "fuel": 100,
+            "iron": 0,
+            "gold": 0
+        },
+        "currentPlanetId": null
     }
 ]
