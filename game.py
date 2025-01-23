@@ -201,10 +201,10 @@ def is_collision_with_planet(x, y, planets):
             return True
     return False
 
-def game_loop(buffer, player, planets, sw):
+def game_loop(buffer, player, planets, sh, sw):
     # Game settings
     ASTEROID_SPEED = 15.0  # positions per second
-    ASTEROID_FREQUENCY = 0.5  # new asteroids per second
+    ASTEROID_FREQUENCY = 50  # new asteroids per second
     FUEL_REGEN_TIME = 15.0  # seconds to wait before regenerating fuel
     FUEL_REGEN_AMOUNT = 15  # amount of fuel to regenerate
     REFRESH_RATE = 0.05  # seconds between screen refreshes
@@ -305,7 +305,7 @@ def game_loop(buffer, player, planets, sw):
         # Check for collisions with asteroids
         for asteroid in asteroids:
             if asteroid.visible and asteroid.x == player.position["x"] and asteroid.y == player.position["y"]:
-                player.health -= 10
+                player.health -= 25
                 asteroid.visible = False
 
                 if player.health <= 0:
@@ -371,7 +371,7 @@ def main(stdscr):
     # Generate random planets
     planets = generate_planets()
 
-    game_loop(buffer, player, planets, sw)
+    game_loop(buffer, player, planets, sh, sw)
 
 if __name__ == "__main__":
     unicurses.wrapper(main)
