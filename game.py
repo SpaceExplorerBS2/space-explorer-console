@@ -2,123 +2,14 @@
 import unicurses
 import random
 import time
+
 import json
 import uuid
 WORLD_WIDTH = 100
 WORLD_HEIGHT = 100
 NUM_PLANETS = 10
-
-def load_players():
-    try:
-        with open('players.json', 'r') as file:
-            return json.load(file)
-    except FileNotFoundError:
-        return []
-
-def save_players(players):
-    with open('players.json', 'w') as file:
-        json.dump(players, file, indent=4)
-
-def get_string_input(stdscr, prompt, y, x):
-    unicurses.echo()
-    unicurses.curs_set(1)
-    
-    unicurses.move(y, x)
-    unicurses.addstr(prompt)
-    
-    input_str = ""
-    while True:
-        ch = unicurses.getch()
-        if ch in [10, 13]:  # Enter key
-            break
-        elif ch == 27:  # Escape key
-            input_str = None
-            break
-        elif ch == 8 or ch == 127:  # Backspace
-            if input_str:
-                input_str = input_str[:-1]
-                unicurses.move(y, x + len(prompt))
-                unicurses.addstr(" " * len(input_str) + " ")
-                unicurses.move(y, x + len(prompt))
-                unicurses.addstr(input_str)
-        else:
-            input_str += chr(ch)
-    
-    unicurses.noecho()
-    unicurses.curs_set(0)
-    return input_str
-
-def create_player_menu(stdscr):
-    sh, sw = unicurses.getmaxyx(stdscr)
-    
-    while True:
-        unicurses.clear()
-        name = get_string_input(stdscr, "Enter player name: ", sh//2, sw//4)
-        
-        if name:
-            player_id = str(uuid.uuid4())[:8]
-            new_player = {
-                "playerId": player_id,
-                "name": name,
-                "inventory": {
-                    "fuel": 100,
-                    "iron": 0,
-                    "gold": 0
-                },
-                "currentPlanetId": None
-            }
-            
-            players = load_players()
-            players.append(new_player)
-            save_players(players)
-            
-            unicurses.clear()
-            unicurses.move(sh//2, sw//4)
-            unicurses.addstr(f"Player {name} created successfully!")
-            unicurses.refresh()
-            unicurses.napms(2000)
-            return player_id
-        else:
-            return None
-
-def select_player_menu(stdscr):
-    players = load_players()
-    if not players:
-        sh, sw = unicurses.getmaxyx(stdscr)
-        unicurses.clear()
-        unicurses.move(sh//2, sw//4)
-        unicurses.addstr("No players found. Please create a player first.")
-        unicurses.refresh()
-        unicurses.napms(2000)
-        return None
-
-    current_row = 0
-    while True:
-        sh, sw = unicurses.getmaxyx(stdscr)
-        unicurses.clear()
-        
-        unicurses.move(sh//4, sw//4)
-        unicurses.addstr("Select Player:")
-        
-        for idx, player in enumerate(players):
-            unicurses.move(sh//4 + idx + 2, sw//4)
-            if idx == current_row:
-                unicurses.attron(unicurses.A_REVERSE)
-            unicurses.addstr(f"{player['name']} (Fuel: {player['inventory']['fuel']})")
-            if idx == current_row:
-                unicurses.attroff(unicurses.A_REVERSE)
-        
-        unicurses.refresh()
-        
-        key = unicurses.getch()
-        if key == unicurses.KEY_UP and current_row > 0:
-            current_row -= 1
-        elif key == unicurses.KEY_DOWN and current_row < len(players) - 1:
-            current_row += 1
-        elif key in [unicurses.KEY_ENTER, 10, 13]:
-            return players[current_row]["playerId"]
-        elif key == 27:  # Escape
-            return None
+NUM_ASTEROIDS = 20  # Increased number of asteroids
+ASTEROID_SPEED = 30.0  # Increased speed of asteroids
 
 def draw_menu(stdscr):
     sh, sw = unicurses.getmaxyx(stdscr)
@@ -159,7 +50,7 @@ def generate_planets():
 def generate_asteroids(num_asteroids, sw):
     return [(random.randint(0, sw - 1), 0) for _ in range(num_asteroids)]
 
-def draw_world(buffer, player_x, player_y, planets, asteroids):
+def draw_world(buffer, player_x, player_y, planets, asteroids, life):
     sh, sw = unicurses.getmaxyx(buffer)
     top = max(0, player_y - sh // 2)
     left = max(0, player_x - sw // 2)
@@ -182,6 +73,9 @@ def draw_world(buffer, player_x, player_y, planets, asteroids):
 
     # Draw player
     unicurses.mvwaddch(buffer, player_y - top, player_x - left, '@')
+
+    # Draw life score
+    unicurses.mvwaddstr(buffer, 0, 0, f"Life: {life}")
 
     # Refresh the buffer
     unicurses.wnoutrefresh(buffer)
@@ -231,15 +125,17 @@ def main(stdscr):
     player_x, player_y = WORLD_WIDTH // 2, WORLD_HEIGHT // 2
 
     # Game settings
-    ASTEROID_SPEED = 15.0  # positions per second
     last_move_time = time.time()
     accumulated_movement = 0.0
+
+    # Player life
+    life = 100
 
     # Generate random planets
     planets = generate_planets()
 
     # Generate random asteroids
-    asteroids = generate_asteroids(5, sw)
+    asteroids = generate_asteroids(NUM_ASTEROIDS, sw)
 
     while True:
         key = unicurses.getch()
@@ -279,11 +175,18 @@ def main(stdscr):
                 new_asteroids.append((random.randint(0, WORLD_WIDTH - 1), 0))
         asteroids = new_asteroids
 
+        # Continuously generate new asteroids
+        while len(asteroids) < NUM_ASTEROIDS:
+            asteroids.append((random.randint(0, WORLD_WIDTH - 1), 0))
+
         # Check for collision with planets
         asteroids = [(ax, ay) for ax, ay in asteroids if not is_collision_with_planet(ax, ay, planets)]
 
         # Check for collision with player
         if (player_x, player_y) in asteroids:
+            life -= 25
+
+        if life <= 0:  # Change the condition to <= 0
             unicurses.clear()
             unicurses.move(sh // 2, sw // 2 - len("Game Over!") // 2)
             unicurses.addstr("Game Over!")
@@ -291,7 +194,7 @@ def main(stdscr):
             unicurses.napms(2000)
             break
 
-        draw_world(buffer, player_x, player_y, planets, asteroids)
+        draw_world(buffer, player_x, player_y, planets, asteroids, life)
 
 if __name__ == "__main__":
     unicurses.wrapper(main)
