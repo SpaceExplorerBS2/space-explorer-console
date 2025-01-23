@@ -302,6 +302,7 @@ def game_loop(buffer, player, planets, sh, sw):
             unicurses.addstr("Out of Fuel! Game Over!")
             unicurses.refresh()
             unicurses.napms(2000)
+            save_player_fuel(player)
             return
 
         # Calculate time-based movement for asteroids
@@ -336,6 +337,7 @@ def game_loop(buffer, player, planets, sh, sw):
                     unicurses.addstr("Game Over!")
                     unicurses.refresh()
                     unicurses.napms(2000)
+                    save_player_fuel(player)
                     return
 
         # Remove invisible asteroids
@@ -348,6 +350,14 @@ def game_loop(buffer, player, planets, sh, sw):
 
         # Small sleep to prevent CPU overuse
         time.sleep(0.01)
+
+def save_player_fuel(player):
+    players = load_players()
+    for p in players:
+        if p["name"] == player.name:
+            p["inventory"]["fuel"] = player.fuel
+            break
+    save_players(players)
 
 def main(stdscr):
     unicurses.curs_set(0)
