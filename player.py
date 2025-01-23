@@ -49,6 +49,21 @@ class Player:
         """
         if resource in self.inventory:
             self.inventory[resource] += amount
+        else:
+            self.inventory.append[resource] = amount 
+
+        
+        f"""
+        You have collected {amount} units of {resource}.
+        
+        Your inventory currently contains:
+        """
+        for x in self.inventory:
+            print(self.inventory[x])
+
+        """
+        This planet has no more resources left to gather
+        """
 
     def get_status(self) -> Dict:
         """
