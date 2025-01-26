@@ -2,6 +2,7 @@ import pygame.mixer
 import os
 from typing import Dict, Optional
 from settings_manager import SettingsManager
+import random
 
 class SoundManager:
     _instance: Optional['SoundManager'] = None
@@ -20,7 +21,8 @@ class SoundManager:
                 self.sfx_channel = pygame.mixer.Channel(1)
                 
                 self.sounds: Dict[str, pygame.mixer.Sound] = {}
-                self.background_music: Optional[pygame.mixer.Sound] = None
+                self.background_tracks: Dict[str, pygame.mixer.Sound] = {}
+                self.current_track: Optional[str] = None
                 self.settings = SettingsManager()
                 self.load_sounds()
                 print("Sound manager initialized successfully")
@@ -28,7 +30,7 @@ class SoundManager:
             except Exception as e:
                 print(f"Error initializing sound manager: {e}")
                 self.initialized = False
-    
+
     def load_sounds(self) -> None:
         """Load all sound effects from the sfx directory."""
         sfx_dir = os.path.join(os.path.dirname(__file__), 'sfx')
@@ -57,16 +59,29 @@ class SoundManager:
             except Exception as e:
                 print(f"Error loading sound {filename}: {e}")
         
-        try:
-            music_path = os.path.join(sfx_dir, 'corridors_of_time.mp3')
-            if os.path.exists(music_path):
-                self.background_music = pygame.mixer.Sound(music_path)
-                print("Loaded background music successfully")
-            else:
-                print(f"Warning: Background music file not found: {music_path}")
-        except Exception as e:
-            print(f"Error loading background music: {e}")
-    
+        # Load background music tracks
+        music_files = {
+            'corridors': 'corridors_of_time.mp3',
+            'space': 'outer_space.wav'
+        }
+        
+        for track_name, filename in music_files.items():
+            music_path = os.path.join(sfx_dir, filename)
+            try:
+                if os.path.exists(music_path):
+                    self.background_tracks[track_name] = pygame.mixer.Sound(music_path)
+                    print(f"Loaded background track: {track_name} from {music_path}")
+                else:
+                    print(f"Warning: Background music file not found: {music_path}")
+            except Exception as e:
+                print(f"Error loading background track {filename}: {e}")
+
+    def check_and_play_next_track(self) -> None:
+        """Check if current track is done and play next one if needed."""
+        if not self.music_channel.get_busy() and self.background_tracks:
+            # Current track finished, play another random one
+            self.play_background_music()
+
     def play_menu_sound(self) -> None:
         """Play the menu navigation sound."""
         try:
@@ -107,8 +122,8 @@ class SoundManager:
         except Exception as e:
             print(f"Error playing sound {sound_name}: {e}")
     
-    def start_background_music(self) -> None:
-        """Start playing the background music in a loop."""
+    def play_background_music(self, track_name: str = None) -> None:
+        """Play a background music track. If no track specified, plays a random track."""
         try:
             if not hasattr(self, 'initialized') or not self.initialized:
                 return
@@ -116,13 +131,28 @@ class SoundManager:
             if not self.settings.get_setting('music_enabled'):
                 return
                 
-            if not self.background_music:
-                print("Warning: Background music not loaded")
+            if not self.background_tracks:
+                print("No background tracks loaded")
+                return
+
+            # If no track specified, choose a random one (different from current)
+            if track_name is None:
+                tracks = list(self.background_tracks.keys())
+                if len(tracks) > 1 and self.current_track:
+                    # Remove current track from options to ensure we switch
+                    tracks.remove(self.current_track)
+                track_name = random.choice(tracks)
+            
+            if track_name not in self.background_tracks:
+                print(f"Warning: Track {track_name} not found")
                 return
                 
             volume = self.settings.get_setting('music_volume')
-            self.background_music.set_volume(volume)
-            self.music_channel.play(self.background_music, loops=-1)
+            self.background_tracks[track_name].set_volume(volume)
+            self.music_channel.play(self.background_tracks[track_name])  # Remove -1 to not loop infinitely
+            self.current_track = track_name
+            print(f"Now playing: {track_name}")
+            
         except Exception as e:
             print(f"Error playing background music: {e}")
     

@@ -365,6 +365,7 @@ def game_loop(buffer, player, planets, sh, sw):
     REFRESH_RATE = 0.05  # seconds between screen refreshes
     
     sound_manager = SoundManager()  # Initialize sound manager
+    sound_manager.play_background_music()  # Start with a random track
     
     last_move_time = time.time()
     last_asteroid_time = time.time()
@@ -478,6 +479,9 @@ def game_loop(buffer, player, planets, sh, sw):
         # Remove invisible asteroids
         asteroids = [ast for ast in asteroids if ast.visible]
 
+        # Check if we need to play the next music track
+        sound_manager.check_and_play_next_track()
+
         # Update screen at regular intervals
         if current_time - last_refresh_time >= REFRESH_RATE:
             draw_world(buffer, player, planets, asteroids)
@@ -515,7 +519,7 @@ def main(stdscr):
         if choice == "start_game":
             if current_player_id:
                 # Start background music when game starts
-                sound_manager.start_background_music()
+                sound_manager.play_background_music()
                 break
             else:
                 unicurses.clear()
