@@ -18,10 +18,34 @@ class Planet:
         return distance <= self.size
         
     def get_symbol(self) -> str:
-        """Return the symbol to represent the planet based on its size."""
-        symbols = {1: 'o', 2: 'O', 3: '@'}
-        return symbols.get(self.size, 'O')
+        """Return a 3x3 planet design."""
+        # Different planet designs
+        planet_designs = [
+            ['╭─╮',
+             '│○│',
+             '╰─╯'],
+            
+            ['┌◆┐',
+             '◆●◆',
+             '└◆┘'],
+             
+            ['╔═╗',
+             '║◉║',
+             '╚═╝'],
+             
+            ['⌜~⌝',
+             '∘◍∘',
+             '⌞~⌟'],
+             
+            ['╭◠╮',
+             '│◎│',
+             '╰◡╯']
+        ]
         
+        # Select a design based on the planet's ID to keep it consistent
+        design_index = hash(self.planet_id) % len(planet_designs)
+        return '\n'.join(planet_designs[design_index])
+
     def to_dict(self) -> Dict:
         """Convert planet data to dictionary format."""
         return {

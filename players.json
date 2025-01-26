@@ -23,7 +23,7 @@
         "playerId": "12347",
         "name": "CaptainZ",
         "inventory": {
-            "fuel": 110,
+            "fuel": 100,
             "iron": 0,
             "gold": 0
         },
@@ -64,6 +64,16 @@
         "name": "test",
         "inventory": {
             "fuel": 100,
+            "iron": 0,
+            "gold": 0
+        },
+        "currentPlanetId": null
+    },
+    {
+        "playerId": "3224b880",
+        "name": "Steve",
+        "inventory": {
+            "fuel": 500,
             "iron": 0,
             "gold": 0
         },

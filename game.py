@@ -7,12 +7,15 @@ import uuid
 from player import Player
 from asteroid import Asteroid
 from planet import Planet
+from moon import Moon
 from sound_manager import SoundManager
 from settings_manager import SettingsManager
 
-WORLD_WIDTH = 1000
-WORLD_HEIGHT = 1000
+WORLD_WIDTH = 300
+WORLD_HEIGHT = 300
 NUM_PLANETS = 10
+NUM_MOONS_PER_PLANET = 1
+MOON_ORBIT_RADIUS = 5
 
 def load_players():
     try:
@@ -247,30 +250,82 @@ def draw_menu(stdscr):
             else:
                 return choice
 
+def draw_pause_menu(buffer):
+    """Draw the pause menu with options."""
+    sh, sw = unicurses.getmaxyx(buffer)
+    menu = ["Resume", "Main Menu"]
+    current_row = 0
+    sound_manager = SoundManager()
+
+    # Clear the buffer once at the start
+    unicurses.werase(buffer)
+    
+    while True:
+        # Draw title
+        title = "GAME PAUSED"
+        unicurses.mvwaddstr(buffer, sh // 3, sw // 2 - len(title) // 2, title)
+
+        # Draw menu options
+        for idx, row in enumerate(menu):
+            x = sw // 2 - len(row) // 2
+            y = sh // 2 - len(menu) // 2 + idx
+            if idx == current_row:
+                unicurses.wattrset(buffer, unicurses.A_REVERSE)
+                unicurses.mvwaddstr(buffer, y, x, row)
+                unicurses.wattrset(buffer, unicurses.A_NORMAL)
+            else:
+                unicurses.mvwaddstr(buffer, y, x, row)
+
+        # Use double buffering to prevent flickering
+        unicurses.wnoutrefresh(buffer)
+        unicurses.doupdate()
+
+        key = unicurses.wgetch(buffer)
+        if key == unicurses.KEY_UP and current_row > 0:
+            current_row -= 1
+            sound_manager.play_menu_sound()
+        elif key == unicurses.KEY_DOWN and current_row < len(menu) - 1:
+            current_row += 1
+            sound_manager.play_menu_sound()
+        elif key in [unicurses.KEY_ENTER, 10, 13]:
+            if current_row == 0:  # Resume
+                return "resume"
+            else:  # Main Menu
+                return "main_menu"
+        elif key == 27:  # Escape key
+            return "resume"
+
 def generate_planets():
     planets = []
+    moons = []
     planet_data = Planet.load_planets()
     
     # Create planets with data from planets.json
-    for i in range(min(NUM_PLANETS, len(planet_data))):
-        x = random.randint(0, WORLD_WIDTH - 1)
-        y = random.randint(0, WORLD_HEIGHT - 1)
-        size = random.randint(1, 3)
-        planets.append(Planet(x, y, size, planet_data[i]))
+    for data in planet_data:
+        x = data.get('position', {}).get('x', random.randint(0, WORLD_WIDTH - 1))
+        y = data.get('position', {}).get('y', random.randint(0, WORLD_HEIGHT - 1))
+        size = data.get('size', random.randint(1, 3))
+        planets.append(Planet(x, y, size, data))
     
-    # If we need more planets than we have data for, create generic ones
+    # Create additional random planets if needed
     while len(planets) < NUM_PLANETS:
         x = random.randint(0, WORLD_WIDTH - 1)
         y = random.randint(0, WORLD_HEIGHT - 1)
         size = random.randint(1, 3)
         planets.append(Planet(x, y, size))
-    return planets
 
+    # Generate moons for planets
+    for planet in planets:
+        for _ in range(random.randint(0, NUM_MOONS_PER_PLANET)):
+            moon = Moon(planet.x, planet.y, random.randint(3, MOON_ORBIT_RADIUS))
+            moons.append(moon)
+            
+    return planets, moons
 
 def generate_asteroids(num_asteroids, sw):
     return [Asteroid(random.randint(0, WORLD_WIDTH - 1), 0) for _ in range(num_asteroids)]
 
-def draw_world(buffer, player, planets, asteroids):
+def draw_world(buffer, player, planets, moons, asteroids):
     sh, sw = unicurses.getmaxyx(buffer)
     top = max(0, player.position["y"] - sh // 2)
     left = max(0, player.position["x"] - sw // 2)
@@ -327,7 +382,18 @@ def draw_world(buffer, player, planets, asteroids):
             screen_y = planet.y - top
             screen_x = planet.x - left
             if 0 <= screen_y < sh and 0 <= screen_x < sw:
-                unicurses.mvwaddstr(buffer, screen_y, screen_x, planet.get_symbol())
+                planet_symbol = planet.get_symbol().split('\n')
+                for i, line in enumerate(planet_symbol):
+                    if 0 <= screen_y + i < sh:
+                        unicurses.mvwaddstr(buffer, screen_y + i, screen_x, line)
+    
+    # Draw moons
+    for moon in moons:
+        if top <= moon.y < top + sh and left <= moon.x < left + sw:
+            screen_y = moon.y - top
+            screen_x = moon.x - left
+            if 0 <= screen_y < sh and 0 <= screen_x < sw:
+                unicurses.mvwaddstr(buffer, screen_y, screen_x, 'o')
     
     # Draw asteroids
     for asteroid in asteroids:
@@ -356,7 +422,7 @@ def is_collision_with_planet(x, y, planets):
             return True
     return False
 
-def game_loop(buffer, player, planets, sh, sw):
+def game_loop(buffer, player, planets, moons, sh, sw):
     # Game settings
     ASTEROID_SPEED = 15.0  # positions per second
     ASTEROID_FREQUENCY = 5  # new asteroids per second
@@ -376,7 +442,7 @@ def game_loop(buffer, player, planets, sh, sw):
     # Set input to non-blocking
     unicurses.nodelay(buffer, True)
 
-    # Generate random planets
+    # Create buffer window for double buffering
     asteroids = []
     asteroids = generate_asteroids(5, sw)
 
@@ -415,6 +481,14 @@ def game_loop(buffer, player, planets, sh, sw):
                     moved = True
             elif key == ord('q'):
                 break
+            elif key == 27:  # Escape key
+                unicurses.nodelay(buffer, False)  # Set to blocking input for menu
+                choice = draw_pause_menu(buffer)
+                if choice == "main_menu":
+                    return "main_menu"
+                unicurses.nodelay(buffer, True)  # Set back to non-blocking
+                last_refresh_time = time.time()  # Reset timers
+                continue
 
             # Check for collision with planets and revert if needed
             if is_collision_with_planet(player.position["x"], player.position["y"], planets):
@@ -479,12 +553,16 @@ def game_loop(buffer, player, planets, sh, sw):
         # Remove invisible asteroids
         asteroids = [ast for ast in asteroids if ast.visible]
 
+        # Update moon positions
+        for moon in moons:
+            moon.move()
+
         # Check if we need to play the next music track
         sound_manager.check_and_play_next_track()
 
         # Update screen at regular intervals
         if current_time - last_refresh_time >= REFRESH_RATE:
-            draw_world(buffer, player, planets, asteroids)
+            draw_world(buffer, player, planets, moons, asteroids)
             last_refresh_time = current_time
 
         # Small sleep to prevent CPU overuse
@@ -549,11 +627,23 @@ def main(stdscr):
     player.position["x"] = WORLD_WIDTH // 2
     player.position["y"] = WORLD_HEIGHT // 2
 
-    # Generate random planets
-    planets = generate_planets()
+    # Generate random planets and moons
+    planets, moons = generate_planets()
 
     # Start the game loop
-    game_loop(buffer, player, planets, sh, sw)
+    while True:
+        result = game_loop(buffer, player, planets, moons, sh, sw)
+        if result == "main_menu":
+            # Stop background music
+            sound_manager.stop_background_music()
+            # Clear the screen
+            unicurses.clear()
+            unicurses.refresh()
+            # Reset to blocking input for menu
+            unicurses.nodelay(stdscr, False)
+            return main(stdscr)  # Restart from main menu
+        else:
+            break
     
     # Stop background music when game ends
     sound_manager.stop_background_music()
