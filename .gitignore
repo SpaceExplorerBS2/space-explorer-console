@@ -2,3 +2,6 @@
 /venv
 __pycache__/asteroid.cpython-312.pyc
 __pycache__/player.cpython-312.pyc
+__pycache__/planet.cpython-312.pyc
+__pycache__/settings_manager.cpython-312.pyc
+__pycache__/sound_manager.cpython-312.pyc
