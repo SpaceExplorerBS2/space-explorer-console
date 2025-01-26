@@ -6,9 +6,12 @@ import json
 import uuid
 from player import Player
 from asteroid import Asteroid
+from planet import Planet
+from sound_manager import SoundManager
+from settings_manager import SettingsManager
 
-WORLD_WIDTH = 100
-WORLD_HEIGHT = 100
+WORLD_WIDTH = 1000
+WORLD_HEIGHT = 1000
 NUM_PLANETS = 10
 
 def load_players():
@@ -64,7 +67,7 @@ def create_player_menu(stdscr):
                 "playerId": player_id,
                 "name": name,
                 "inventory": {
-                    "fuel": 100,
+                    "fuel": 500,
                     "iron": 0,
                     "gold": 0
                 },
@@ -86,6 +89,8 @@ def create_player_menu(stdscr):
 
 def select_player_menu(stdscr):
     players = load_players()
+    sound_manager = SoundManager()
+    
     if not players:
         sh, sw = unicurses.getmaxyx(stdscr)
         unicurses.clear()
@@ -116,17 +121,103 @@ def select_player_menu(stdscr):
         key = unicurses.getch()
         if key == unicurses.KEY_UP and current_row > 0:
             current_row -= 1
+            sound_manager.play_menu_sound()
         elif key == unicurses.KEY_DOWN and current_row < len(players) - 1:
             current_row += 1
+            sound_manager.play_menu_sound()
         elif key in [unicurses.KEY_ENTER, 10, 13]:
             return players[current_row]["playerId"], players[current_row]["name"]
         elif key == 27:  # Escape
             return None, None
 
+def settings_menu(stdscr):
+    sh, sw = unicurses.getmaxyx(stdscr)
+    settings_manager = SettingsManager()
+    sound_manager = SoundManager()
+    
+    options = [
+        "Sound Effects: {}",
+        "Background Music: {}",
+        "Sound Volume: {}%",
+        "Music Volume: {}%",
+        "Back"
+    ]
+    current_row = 0
+    
+    while True:
+        unicurses.clear()
+        
+        # Update option texts with current settings
+        options[0] = options[0].format("ON" if settings_manager.get_setting("sound_enabled") else "OFF")
+        options[1] = options[1].format("ON" if settings_manager.get_setting("music_enabled") else "OFF")
+        options[2] = options[2].format(int(settings_manager.get_setting("sound_volume") * 100))
+        options[3] = options[3].format(int(settings_manager.get_setting("music_volume") * 100))
+        
+        # Draw title
+        title = "Settings (Use ← → to change values)"
+        unicurses.move(sh//4, sw//2 - len(title)//2)
+        unicurses.addstr(title)
+        
+        # Draw options
+        for idx, option in enumerate(options):
+            y = sh//4 + idx + 2
+            x = sw//2 - len(option)//2
+            unicurses.move(y, x)
+            if idx == current_row:
+                unicurses.attron(unicurses.A_REVERSE)
+            unicurses.addstr(option)
+            if idx == current_row:
+                unicurses.attroff(unicurses.A_REVERSE)
+        
+        unicurses.refresh()
+        
+        key = unicurses.getch()
+        if key == unicurses.KEY_UP and current_row > 0:
+            current_row -= 1
+            sound_manager.play_menu_sound()
+        elif key == unicurses.KEY_DOWN and current_row < len(options) - 1:
+            current_row += 1
+            sound_manager.play_menu_sound()
+        elif key == unicurses.KEY_LEFT or key == unicurses.KEY_RIGHT:
+            if current_row < 4:  # Not on "Back" option
+                sound_manager.play_menu_sound()
+                if current_row == 0:  # Sound Effects toggle
+                    new_value = not settings_manager.get_setting("sound_enabled")
+                    settings_manager.set_setting("sound_enabled", new_value)
+                elif current_row == 1:  # Background Music toggle
+                    new_value = not settings_manager.get_setting("music_enabled")
+                    settings_manager.set_setting("music_enabled", new_value)
+                    if new_value:
+                        sound_manager.start_background_music()
+                    else:
+                        sound_manager.stop_background_music()
+                elif current_row == 2:  # Sound Volume
+                    volume = settings_manager.get_setting("sound_volume")
+                    if key == unicurses.KEY_RIGHT:
+                        volume = min(1.0, volume + 0.1)
+                    else:
+                        volume = max(0.0, volume - 0.1)
+                    settings_manager.set_setting("sound_volume", volume)
+                elif current_row == 3:  # Music Volume
+                    volume = settings_manager.get_setting("music_volume")
+                    if key == unicurses.KEY_RIGHT:
+                        volume = min(1.0, volume + 0.1)
+                    else:
+                        volume = max(0.0, volume - 0.1)
+                    settings_manager.set_setting("music_volume", volume)
+                    if settings_manager.get_setting("music_enabled"):
+                        sound_manager.stop_background_music()
+                        sound_manager.start_background_music()
+        elif key in [unicurses.KEY_ENTER, 10, 13] and current_row == 4:  # Back option
+            return
+        elif key == 27:  # Escape
+            return
+
 def draw_menu(stdscr):
     sh, sw = unicurses.getmaxyx(stdscr)
-    menu = ["Start Game", "Create Player", "Select Player", "Exit"]
+    menu = ["Start Game", "Create Player", "Select Player", "Settings", "Exit"]
     current_row = 0
+    sound_manager = SoundManager()
 
     while True:
         unicurses.clear()
@@ -145,22 +236,39 @@ def draw_menu(stdscr):
         key = unicurses.getch()
         if key == unicurses.KEY_UP and current_row > 0:
             current_row -= 1
+            sound_manager.play_menu_sound()
         elif key == unicurses.KEY_DOWN and current_row < len(menu) - 1:
             current_row += 1
+            sound_manager.play_menu_sound()
         elif key in [unicurses.KEY_ENTER, 10, 13]:
-            return menu[current_row].lower().replace(" ", "_")
+            choice = menu[current_row].lower().replace(" ", "_")
+            if choice == "settings":
+                settings_menu(stdscr)
+            else:
+                return choice
 
 def generate_planets():
     planets = []
-    for _ in range(NUM_PLANETS):
+    planet_data = Planet.load_planets()
+    
+    # Create planets with data from planets.json
+    for i in range(min(NUM_PLANETS, len(planet_data))):
         x = random.randint(0, WORLD_WIDTH - 1)
         y = random.randint(0, WORLD_HEIGHT - 1)
-        size = random.randint(1, 3)  # Random size between 1 and 3
-        planets.append((x, y, size))
+        size = random.randint(1, 3)
+        planets.append(Planet(x, y, size, planet_data[i]))
+    
+    # If we need more planets than we have data for, create generic ones
+    while len(planets) < NUM_PLANETS:
+        x = random.randint(0, WORLD_WIDTH - 1)
+        y = random.randint(0, WORLD_HEIGHT - 1)
+        size = random.randint(1, 3)
+        planets.append(Planet(x, y, size))
     return planets
 
+
 def generate_asteroids(num_asteroids, sw):
-    return [Asteroid(random.randint(0, sw - 1), 0) for _ in range(num_asteroids)]
+    return [Asteroid(random.randint(0, WORLD_WIDTH - 1), 0) for _ in range(num_asteroids)]
 
 def draw_world(buffer, player, planets, asteroids):
     sh, sw = unicurses.getmaxyx(buffer)
@@ -170,6 +278,23 @@ def draw_world(buffer, player, planets, asteroids):
     # Clear the buffer and reset attributes
     unicurses.werase(buffer)
     unicurses.wattrset(buffer, unicurses.color_pair(3))  # Reset to default white
+
+    # Draw borders
+    for y in range(sh):
+        screen_x_left = 0 - left
+        screen_x_right = WORLD_WIDTH - 1 - left
+        if 0 <= screen_x_left < sw:
+            unicurses.mvwaddch(buffer, y, screen_x_left, ord('#'))
+        if 0 <= screen_x_right < sw:
+            unicurses.mvwaddch(buffer, y, screen_x_right, ord('#'))
+    
+    for x in range(sw):
+        screen_y_top = 0 - top
+        screen_y_bottom = WORLD_HEIGHT - 1 - top
+        if 0 <= screen_y_top < sh:
+            unicurses.mvwaddch(buffer, screen_y_top, x, ord('#'))
+        if 0 <= screen_y_bottom < sh:
+            unicurses.mvwaddch(buffer, screen_y_bottom, x, ord('#'))
 
     # Set color based on health percentage
     health_color = unicurses.color_pair(3)  # default white
@@ -197,39 +322,49 @@ def draw_world(buffer, player, planets, asteroids):
     unicurses.wattrset(buffer, unicurses.color_pair(3))
 
     # Draw planets
-    for planet_x, planet_y, size in planets:
-        if top <= planet_y < top + sh and left <= planet_x < left + sw:
-            for i in range(size):
-                for j in range(size):
-                    if top <= planet_y + i < top + sh and left <= planet_x + j < left + sw:
-                        unicurses.mvwaddch(buffer, planet_y + i - top, planet_x + j - left, ord('O'))
-
+    for planet in planets:
+        if top <= planet.y < top + sh and left <= planet.x < left + sw:
+            screen_y = planet.y - top
+            screen_x = planet.x - left
+            if 0 <= screen_y < sh and 0 <= screen_x < sw:
+                unicurses.mvwaddstr(buffer, screen_y, screen_x, planet.get_symbol())
+    
     # Draw asteroids
     for asteroid in asteroids:
         if asteroid.visible and top <= asteroid.y < top + sh and left <= asteroid.x < left + sw:
             unicurses.mvwaddch(buffer, asteroid.y - top, asteroid.x - left, ord('X'))
 
-    # Draw player
-    unicurses.mvwaddch(buffer, player.position["y"] - top, player.position["x"] - left, ord('@'))
+    # Draw player with direction and health-based character
+    player_chars = {
+        'up': '▲' if player.health >= 50 else '△',
+        'down': '▼' if player.health >= 50 else '▽',
+        'left': '◄' if player.health >= 50 else '◁',
+        'right': '►' if player.health >= 50 else '▷'
+    }
+    player_char = player_chars.get(player.direction, '▲')  # Default to up arrow if direction is unknown
+    unicurses.mvwaddwstr(buffer, player.position["y"] - top, player.position["x"] - left, player_char)
 
     # Refresh the buffer
     unicurses.wnoutrefresh(buffer)
     unicurses.doupdate()
 
 def is_collision_with_planet(x, y, planets):
-    for planet_x, planet_y, size in planets:
-        if (planet_x <= x < planet_x + size and 
-            planet_y <= y < planet_y + size):
+    for planet in planets:
+        # Calculate distance between point and planet center using Pythagorean theorem
+        distance = ((planet.x - x) ** 2 + (planet.y - y) ** 2) ** 0.5
+        if distance <= planet.size:  # If distance is less than or equal to planet radius
             return True
     return False
 
 def game_loop(buffer, player, planets, sh, sw):
     # Game settings
     ASTEROID_SPEED = 15.0  # positions per second
-    ASTEROID_FREQUENCY = 50  # new asteroids per second
-    FUEL_REGEN_TIME = 15.0  # seconds to wait before regenerating fuel
+    ASTEROID_FREQUENCY = 5  # new asteroids per second
+    FUEL_REGEN_TIME = 10.0  # seconds to wait before regenerating fuel
     FUEL_REGEN_AMOUNT = 15  # amount of fuel to regenerate
     REFRESH_RATE = 0.05  # seconds between screen refreshes
+    
+    sound_manager = SoundManager()  # Initialize sound manager
     
     last_move_time = time.time()
     last_asteroid_time = time.time()
@@ -360,6 +495,9 @@ def save_player_fuel(player):
     save_players(players)
 
 def main(stdscr):
+    import locale
+    locale.setlocale(locale.LC_ALL, '')
+    
     unicurses.curs_set(0)
     unicurses.start_color()
     unicurses.init_pair(1, unicurses.COLOR_RED, unicurses.COLOR_BLACK)    # For critical levels (<30%)
@@ -370,11 +508,14 @@ def main(stdscr):
 
     current_player_id = None
     current_player_name = None
+    sound_manager = SoundManager()
 
     while True:
         choice = draw_menu(stdscr)
         if choice == "start_game":
             if current_player_id:
+                # Start background music when game starts
+                sound_manager.start_background_music()
                 break
             else:
                 unicurses.clear()
@@ -407,7 +548,11 @@ def main(stdscr):
     # Generate random planets
     planets = generate_planets()
 
+    # Start the game loop
     game_loop(buffer, player, planets, sh, sw)
+    
+    # Stop background music when game ends
+    sound_manager.stop_background_music()
 
 if __name__ == "__main__":
     unicurses.wrapper(main)

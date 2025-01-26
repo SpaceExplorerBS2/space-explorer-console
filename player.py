@@ -7,31 +7,36 @@ class Player:
     def __init__(self, name: str) -> None:
         self.name = name
         self.health = 100  # player starts with 100 health
-        self.fuel = 100    # player starts with 100 fuel
+        self.fuel = 500    # player starts with 500 fuel
         self.inventory = {}  # by default empty inventory
         self.position = {"x": 0, "y": 0}  # Position in the game world
         self.current_planet = None  # player starts in space
         self.visited_planets = []  # Keep track of visited planets
+        self.direction = "up"  # Initial direction
 
     def move_up(self) -> None:
         """Move player up in the game world."""
         if self.use_fuel():
             self.position["y"] -= 1
+            self.direction = "up"
 
     def move_down(self) -> None:
         """Move player down in the game world."""
         if self.use_fuel():
             self.position["y"] += 1
+            self.direction = "down"
 
     def move_left(self) -> None:
         """Move player left in the game world."""
         if self.use_fuel():
             self.position["x"] -= 1
+            self.direction = "left"
 
     def move_right(self) -> None:
         """Move player right in the game world."""
         if self.use_fuel():
             self.position["x"] += 1
+            self.direction = "right"
 
     def visit_planet(self, planet_name: str) -> None:
         """
@@ -95,7 +100,8 @@ class Player:
             "current_planet": self.current_planet,
             "visited_planets": self.visited_planets,
             "inventory": self.inventory,
-            "fuel": self.fuel
+            "fuel": self.fuel,
+            "direction": self.direction
         }
 
     @classmethod
@@ -116,4 +122,5 @@ class Player:
         player.current_planet = player_data.get("currentPlanetId", None)
         player.visited_planets = player_data.get("visited_planets", [])
         player.inventory = player_data.get("inventory", {})
+        player.direction = player_data.get("direction", "up")
         return player
