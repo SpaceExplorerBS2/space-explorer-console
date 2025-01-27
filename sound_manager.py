@@ -59,7 +59,7 @@ class SoundManager:
         # Load background music tracks
         music_files = {
             'corridors': 'corridors_of_time.mp3',
-            'space': 'outer_space.wav'
+            'outer_space': 'outer_space.wav'
         }
         
         for track_name, filename in music_files.items():
@@ -70,7 +70,7 @@ class SoundManager:
                 else:
                     print(f"Warning: Background music file not found: {music_path}")
             except Exception as e:
-                print(f"Error loading background track {filename}: {e}")
+                print(f"Error loading background track {track_name}: {e}")
 
     def check_and_play_next_track(self) -> None:
         """Check if current track is done and play next one if needed."""
@@ -127,28 +127,21 @@ class SoundManager:
             if not self.settings.get_setting('music_enabled'):
                 return
                 
-            if not self.background_tracks:
-                print("No background tracks loaded")
-                return
-
-            # If no track specified, choose a random one (different from current)
-            if track_name is None:
-                tracks = list(self.background_tracks.keys())
-                if len(tracks) > 1 and self.current_track:
-                    # Remove current track from options to ensure we switch
-                    tracks.remove(self.current_track)
-                track_name = random.choice(tracks)
+            # Stop current track if playing
+            if self.current_track:
+                self.stop_background_music()
+            
+            # If no track specified, pick a random one
+            if track_name is None and self.background_tracks:
+                track_name = random.choice(list(self.background_tracks.keys()))
             
             if track_name not in self.background_tracks:
-                print(f"Warning: Track {track_name} not found")
                 return
                 
-            volume = self.settings.get_setting('music_volume')
-            self.background_tracks[track_name].set_volume(volume)
-            self.music_channel.play(self.background_tracks[track_name])  # Remove -1 to not loop infinitely
             self.current_track = track_name
-            print(f"Now playing: {track_name}")
-            
+            base_volume = self.settings.get_setting('music_volume')
+            self.background_tracks[track_name].set_volume(base_volume)
+            self.music_channel.play(self.background_tracks[track_name], loops=-1)  # -1 means loop indefinitely
         except Exception as e:
             print(f"Error playing background music: {e}")
     
