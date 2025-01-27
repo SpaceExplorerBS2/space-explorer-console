@@ -187,11 +187,15 @@ def settings_menu(stdscr):
                 if current_row == 0:  # Sound Effects toggle
                     new_value = not settings_manager.get_setting("sound_enabled")
                     settings_manager.set_setting("sound_enabled", new_value)
+                    # Update option text immediately
+                    options[0] = "Sound Effects: {}".format("ON" if new_value else "OFF")
                 elif current_row == 1:  # Background Music toggle
                     new_value = not settings_manager.get_setting("music_enabled")
                     settings_manager.set_setting("music_enabled", new_value)
+                    # Update option text immediately
+                    options[1] = "Background Music: {}".format("ON" if new_value else "OFF")
                     if new_value:
-                        sound_manager.start_background_music()
+                        sound_manager.play_background_music()
                     else:
                         sound_manager.stop_background_music()
                 elif current_row == 2:  # Sound Volume
@@ -201,6 +205,9 @@ def settings_menu(stdscr):
                     else:
                         volume = max(0.0, volume - 0.1)
                     settings_manager.set_setting("sound_volume", volume)
+                    sound_manager.update_volumes()
+                    # Update option text immediately
+                    options[2] = "Sound Volume: {}%".format(int(volume * 100))
                 elif current_row == 3:  # Music Volume
                     volume = settings_manager.get_setting("music_volume")
                     if key == unicurses.KEY_RIGHT:
@@ -208,9 +215,28 @@ def settings_menu(stdscr):
                     else:
                         volume = max(0.0, volume - 0.1)
                     settings_manager.set_setting("music_volume", volume)
-                    if settings_manager.get_setting("music_enabled"):
-                        sound_manager.stop_background_music()
-                        sound_manager.start_background_music()
+                    sound_manager.update_volumes()
+                    # Update option text immediately
+                    options[3] = "Music Volume: {}%".format(int(volume * 100))
+                
+                # Redraw the menu immediately after any change
+                unicurses.clear()
+                # Draw title
+                title = "Settings (Use ← → to change values)"
+                unicurses.move(sh//4, sw//2 - len(title)//2)
+                unicurses.addstr(title)
+                
+                # Draw options
+                for idx, option in enumerate(options):
+                    y = sh//4 + idx + 2
+                    x = sw//2 - len(option)//2
+                    unicurses.move(y, x)
+                    if idx == current_row:
+                        unicurses.attron(unicurses.A_REVERSE)
+                    unicurses.addstr(option)
+                    if idx == current_row:
+                        unicurses.attroff(unicurses.A_REVERSE)
+                unicurses.refresh()
         elif key in [unicurses.KEY_ENTER, 10, 13] and current_row == 4:  # Back option
             return
         elif key == 27:  # Escape
@@ -426,8 +452,9 @@ def game_loop(buffer, player, planets, moons, sh, sw):
     # Game settings
     ASTEROID_SPEED = 15.0  # positions per second
     ASTEROID_FREQUENCY = 5  # new asteroids per second
-    FUEL_REGEN_TIME = 10.0  # seconds to wait before regenerating fuel
-    FUEL_REGEN_AMOUNT = 15  # amount of fuel to regenerate
+    FUEL_REGEN_WAIT_TIME = 10.0  # seconds to wait before starting fuel regeneration
+    FUEL_REGEN_INTERVAL = 0.5  # seconds between each fuel regeneration
+    FUEL_REGEN_AMOUNT = 1  # amount of fuel to regenerate each time
     REFRESH_RATE = 0.05  # seconds between screen refreshes
     
     sound_manager = SoundManager()  # Initialize sound manager
@@ -436,7 +463,9 @@ def game_loop(buffer, player, planets, moons, sh, sw):
     last_move_time = time.time()
     last_asteroid_time = time.time()
     last_movement_time = time.time()  # Track when player last moved
+    last_fuel_regen_time = time.time()  # Track when fuel was last regenerated
     last_refresh_time = time.time()   # Track when screen was last refreshed
+    fuel_regen_started = False  # Track if fuel regeneration has started
     accumulated_movement = 0.0
 
     # Set input to non-blocking
@@ -499,11 +528,19 @@ def game_loop(buffer, player, planets, moons, sh, sw):
         # Update last movement time if player moved
         if moved:
             last_movement_time = current_time
+            fuel_regen_started = False  # Reset fuel regeneration when player moves
         else:
-            # Check if player has been still long enough to regenerate fuel
-            if current_time - last_movement_time >= FUEL_REGEN_TIME and player.fuel < 100:
-                player.add_fuel(FUEL_REGEN_AMOUNT)
-                last_movement_time = current_time  # Reset timer after regenerating
+            # Check if player has been still long enough to start regenerating fuel
+            time_since_movement = current_time - last_movement_time
+            
+            if time_since_movement >= FUEL_REGEN_WAIT_TIME:
+                if not fuel_regen_started:
+                    fuel_regen_started = True
+                    last_fuel_regen_time = current_time
+                elif current_time - last_fuel_regen_time >= FUEL_REGEN_INTERVAL:
+                    if player.fuel < 500:  # Cap fuel at 500
+                        player.add_fuel(FUEL_REGEN_AMOUNT)
+                        last_fuel_regen_time = current_time
 
         # Game over if out of fuel
         if player.fuel <= 0:

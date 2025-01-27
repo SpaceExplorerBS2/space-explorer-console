@@ -164,6 +164,25 @@ class SoundManager:
         except Exception as e:
             print(f"Error stopping background music: {e}")
     
+    def update_volumes(self) -> None:
+        """Update volumes of currently playing sounds based on settings."""
+        try:
+            if not hasattr(self, 'initialized') or not self.initialized:
+                return
+                
+            # Update music volume if music is playing
+            if self.current_track and self.settings.get_setting('music_enabled'):
+                volume = self.settings.get_setting('music_volume')
+                self.background_tracks[self.current_track].set_volume(volume)
+                
+            # Update sound effects volume for loaded sounds
+            sound_volume = self.settings.get_setting('sound_volume')
+            for sound in self.sounds.values():
+                sound.set_volume(sound_volume)
+                
+        except Exception as e:
+            print(f"Error updating volumes: {e}")
+            
     def stop_all(self) -> None:
         """Stop all sounds and music."""
         try:

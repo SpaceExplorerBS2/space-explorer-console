@@ -78,5 +78,15 @@
             "gold": 0
         },
         "currentPlanetId": null
+    },
+    {
+        "playerId": "55fe75f1",
+        "name": "\u0102Mark",
+        "inventory": {
+            "fuel": 500,
+            "iron": 0,
+            "gold": 0
+        },
+        "currentPlanetId": null
     }
 ]
