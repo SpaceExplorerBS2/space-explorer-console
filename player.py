@@ -84,7 +84,7 @@ class Player:
         Args:
             amount: Amount of fuel to add
         """
-        self.fuel = min(100, self.fuel + amount)  # Cap at 100
+        self.fuel = min(500, self.fuel + amount)  # Cap at 500
 
     def get_status(self) -> Dict:
         """

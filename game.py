@@ -424,7 +424,10 @@ def draw_world(buffer, player, planets, moons, asteroids):
     # Draw asteroids
     for asteroid in asteroids:
         if asteroid.visible and top <= asteroid.y < top + sh and left <= asteroid.x < left + sw:
-            unicurses.mvwaddch(buffer, asteroid.y - top, asteroid.x - left, ord('X'))
+            screen_y = asteroid.y - top
+            screen_x = asteroid.x - left
+            if 0 <= screen_y < sh and 0 <= screen_x < sw:
+                unicurses.mvwaddch(buffer, screen_y, screen_x, ord('X'))
 
     # Draw player with direction and health-based character
     player_chars = {
@@ -559,9 +562,10 @@ def game_loop(buffer, player, planets, moons, sh, sw):
         while accumulated_movement >= 1.0:
             # Move all asteroids down
             for asteroid in asteroids:
-                asteroid.y += 1
-                if asteroid.y >= WORLD_HEIGHT:
-                    asteroid.visible = False
+                if asteroid.visible:
+                    asteroid.move_down(1, planets)
+                    if asteroid.y >= WORLD_HEIGHT:
+                        asteroid.visible = False
             accumulated_movement -= 1.0
 
         last_move_time = current_time
