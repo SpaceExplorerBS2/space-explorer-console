@@ -34,18 +34,16 @@ class SoundManager:
     def load_sounds(self) -> None:
         """Load all sound effects from the sfx directory."""
         sfx_dir = os.path.join(os.path.dirname(__file__), 'sfx')
-        print(f"Loading sounds from: {sfx_dir}")
         
         if not os.path.exists(sfx_dir):
-            print(f"Warning: sfx directory not found at {sfx_dir}")
             return
         
         sound_files = {
             'blip': 'blip.wav',
-            'thrust': 'thrust.wav',
-            'crash': 'crash.wav',
-            'collect': 'collect.wav',
-            'game_over': 'game_over.wav'
+            #'thrust': 'boom3.wav',  # Use boom3.wav for thrust sound
+            #'crash': 'boom10.wav',  # Use boom10.wav for crash sound
+            #'collect': 'blip.wav',  # Reuse blip.wav for collect sound
+            #'game_over': 'boom10.wav'  # Use boom10.wav for game over sound
         }
         
         for sound_name, filename in sound_files.items():
@@ -53,7 +51,6 @@ class SoundManager:
             try:
                 if os.path.exists(file_path):
                     self.sounds[sound_name] = pygame.mixer.Sound(file_path)
-                    print(f"Loaded sound: {sound_name} from {file_path}")
                 else:
                     print(f"Warning: Sound file not found: {file_path}")
             except Exception as e:
@@ -70,7 +67,6 @@ class SoundManager:
             try:
                 if os.path.exists(music_path):
                     self.background_tracks[track_name] = pygame.mixer.Sound(music_path)
-                    print(f"Loaded background track: {track_name} from {music_path}")
                 else:
                     print(f"Warning: Background music file not found: {music_path}")
             except Exception as e:
